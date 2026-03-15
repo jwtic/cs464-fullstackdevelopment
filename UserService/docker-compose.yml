@@ -1,0 +1,58 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:15
+    container_name: user-db
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: ${POSTGRES_DB:-userdb}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-user} -d ${POSTGRES_DB:-userdb}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - microservices-network
+
+  user_service:
+    build: .
+    container_name: user-service
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg2://user:password@db:5432/userdb}
+      POSTGRES_USER: ${POSTGRES_USER:-user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: ${POSTGRES_DB:-userdb}
+    ports:
+      - "5000:5000"
+    command: >
+      sh -c "
+        echo '⏳ Waiting for Postgres...' &&
+        until pg_isready -h db -p 5432 -U $${POSTGRES_USER:-user} -d $${POSTGRES_DB:-userdb}; do 
+          echo 'Waiting for database...' && sleep 2
+        done &&
+        echo 'Postgres is ready, starting user service...' &&
+        uvicorn app.main:app --host 0.0.0.0 --port 5000 --reload
+      "
+    volumes:
+      - .:/app
+    working_dir: /app
+    networks:
+      - microservices-network
+
+volumes:
+  pgdata:
+
+networks:
+  microservices-network:
+    external: true
+    name: microservices-network

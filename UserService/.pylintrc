@@ -1,0 +1,39 @@
+[MASTER]
+# Python code to execute, usually for sys.path manipulation such as pygtk.require().
+init-hook='import sys; sys.path.append(".")'
+
+# Files or directories to be skipped. They should be base names, not paths.
+ignore=CVS,.git,__pycache__,.venv,venv,env,.terraform
+
+[MESSAGES CONTROL]
+# Disable the message, report, category or checker with the given id(s).
+disable=
+    C0111,  # missing-docstring
+    C0103,  # invalid-name (for short variable names)
+    R0903,  # too-few-public-methods
+    R0913,  # too-many-arguments
+    W0703,  # broad-except
+    C0415,  # import-outside-toplevel
+    E0401,  # import-error (for CI environment without installed packages)
+
+[FORMAT]
+# Maximum number of characters on a single line.
+max-line-length=100
+
+# Maximum number of lines in a module.
+max-module-lines=1000
+
+[BASIC]
+# Good variable names which should always be accepted, separated by a comma.
+good-names=i,j,k,ex,Run,_,id,db,app
+
+[DESIGN]
+# Maximum number of arguments for function / method.
+max-args=7
+
+# Maximum number of attributes for a class.
+max-attributes=10
+
+[IMPORTS]
+# Allow wildcard imports from modules that define __all__.
+allow-wildcard-with-all=no

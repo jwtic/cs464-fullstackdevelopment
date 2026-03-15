@@ -1,0 +1,21 @@
+# --- Core framework ---
+fastapi==0.115.0
+uvicorn[standard]==0.30.1
+
+# --- Database & ORM ---
+SQLAlchemy==2.0.31
+alembic==1.13.2
+psycopg2-binary==2.9.9   # Postgres driver
+# For SQLite in local testing, no extra package needed.
+
+# --- Authentication & Security ---
+bcrypt==4.0.1
+python-jose[cryptography]==3.3.0   # JWT encoding/decoding
+passlib[bcrypt]==1.7.4             # Password hashing
+pydantic[email]==2.9.2             # Email validation
+
+# --- Testing & Development ---
+pytest==8.3.2
+pytest-asyncio==0.23.8
+httpx==0.27.2                      # Async HTTP client for integration tests
+requests==2.32.3                   # Optional, often used for service-to-service calls
