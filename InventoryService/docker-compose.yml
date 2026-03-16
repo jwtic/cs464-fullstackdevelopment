@@ -1,0 +1,46 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:15
+    container_name: inventory-db
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-inventory}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: ${POSTGRES_DB:-inventorydb}
+    ports:
+      - "5433:5432"
+    volumes:
+      - inv_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-inventory} -d ${POSTGRES_DB:-inventorydb}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  inventory_service:
+    build: .
+    container_name: inventory-service
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg2://inventory:password@db:5432/inventorydb}
+    ports:
+      - "5001:5001"
+    command: >
+      sh -c "
+        echo '⏳ Waiting for Postgres...' &&
+        until pg_isready -h db -p 5432 -U $${POSTGRES_USER:-inventory} -d $${POSTGRES_DB:-inventorydb}; do
+          echo 'Waiting for database...' && sleep 2
+        done &&
+        echo 'Postgres is ready, starting inventory service...' &&
+        uvicorn app.main:app --host 0.0.0.0 --port 5001 --reload
+      "
+    volumes:
+      - .:/app
+    working_dir: /app
+
+volumes:
+  inv_pgdata:
