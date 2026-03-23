@@ -36,10 +36,16 @@ export default function Home() {
                 </svg>
               </h1>
               <p className="text-base-content/80 max-w-3xl">Welcome to a dining experience where flavor, freshness, and hospitality come together. Whether it's your first visit or your hundredth, every plate is made to impress.</p>
-              <a href="#" className="btn btn-primary btn-gradient btn-lg">
-                Experience the Flavor
-                <span className="icon-[tabler--arrow-right] size-5 rtl:rotate-180"></span>
-              </a>
+              <div className="flex gap-4">
+                <a href="/upload" className="btn btn-primary btn-gradient btn-lg">
+                  Experience the Flavor
+                  <span className="icon-[tabler--arrow-right] size-5 rtl:rotate-180"></span>
+                </a>
+                <a href="/inventory" className="btn btn-secondary btn-lg">
+                  My Inventory
+                  <span className="icon-[tabler--box] size-5"></span>
+                </a>
+              </div>
             </div>
             <img src="/assets/img/dishes-hero.png" alt="Dishes" className="min-h-67 w-full object-cover" />
           </div>
@@ -561,149 +567,7 @@ export default function Home() {
           </div>
         </section>
         {/* FAQ */}
-        <section id="faqs">
-          <div className="bg-base-100 relative h-full py-8 sm:py-16 lg:py-24">
-            <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
-              <span className="intersect:motion-preset-slide-right intersect:motion-duration-800 intersect:motion-opacity-0 intersect:motion-delay-600 absolute start-[15%]">
-                <svg xmlns="http://www.w3.org/2000/svg" width="102" height="120" viewBox="0 0 102 120" fill="none">
-                  <g opacity="0.06">
-                    <path
-                      d="M28.7216 21.3499C28.9372 20.7851 41.4433 1.58331 65.1497 9.79441C81.0958 15.3176 91.1148 31.322 85.0343 47.2497C80.8081 58.3201 70.4601 62.4098 58.4869 63.5065C54.2254 63.9489 52.9117 67.0751 51.4887 70.8027L49.0737 77.1288L31.533 71.0533L36.2336 58.7402C38.131 53.77 39.8962 49.7767 45.9306 48.1581C54.097 45.9987 60.2859 47.7587 63.3477 39.7382C65.4177 34.316 63.0568 29.1498 58.273 27.4928C50.6191 24.8418 44.3109 30.3308 41.287 34.7831L28.7216 21.3499ZM45.1012 97.6235C42.3843 104.74 34.7635 108.623 27.9601 106.267C21.2626 103.947 18.0403 96.308 20.7571 89.1915C23.517 81.9618 31.1379 78.0787 37.8354 80.3985C44.6389 82.7549 47.8611 90.3941 45.1012 97.6235Z"
-                      fill="var(--color-primary)"
-                      fillOpacity="0.5" />
-                    <path d="M44.7303 82.2389L38.3477 79.918L29.1259 105.278L35.5086 107.599L44.7303 82.2389Z" fill="var(--color-primary)" fillOpacity="0.5" />
-                    <path
-                      d="M35.1044 23.6722C35.32 23.1074 47.8261 3.90558 71.5325 12.1167C87.4786 17.6399 97.4976 33.6442 91.4171 49.572C87.1909 60.6423 76.8429 64.7321 64.8694 65.8287C60.608 66.2711 59.2942 69.3973 57.8712 73.1249L55.4562 79.4509L37.9155 73.3754L42.6161 61.0624C44.5135 56.0921 46.2788 52.0989 52.3131 50.4803C60.4795 48.3208 66.6684 50.0808 69.7303 42.0604C71.8002 36.6382 69.4394 31.472 64.6555 29.815C57.0017 27.164 50.6934 32.653 47.6696 37.1053L35.1044 23.6722ZM51.4838 99.9456C48.7669 107.062 41.1461 110.945 34.3426 108.589C27.6451 106.269 24.4228 98.6302 27.1396 91.5137C29.8996 84.284 37.5205 80.4008 44.218 82.7206C51.0217 85.0772 54.2436 92.7162 51.4838 99.9456Z"
-                      fill="var(--color-primary)" />
-                    <path d="M26.8203 20.9316L33.203 23.2526L46.623 37.0351L40.2406 34.7143L26.8203 20.9316Z" fill="var(--color-primary)" fillOpacity="0.4" />
-                  </g>
-                </svg>
-              </span>
-              <span className="intersect:motion-preset-slide-right intersect:motion-duration-800 intersect:motion-opacity-0 intersect:motion-delay-1200 absolute end-[15%] sm:max-md:end-[5%]">
-                <svg xmlns="http://www.w3.org/2000/svg" width="166" height="181" viewBox="0 0 166 181" fill="none">
-                  <g opacity="0.06">
-                    <path
-                      d="M32.038 72.3179C31.7026 71.5655 25.451 41.3586 57.0249 28.2981C78.263 19.513 103.808 26.4121 113.264 47.6299C119.836 62.3771 113.524 75.6814 102.682 87.4734C98.8736 91.7219 100.61 95.994 102.823 100.96L106.579 109.387L83.2168 119.05L75.9067 102.648C72.9559 96.0267 70.8247 90.4919 75.2515 83.4928C81.2727 74.0516 89.142 70.2619 84.3804 59.5776C81.1613 52.3546 73.7841 49.3467 67.4126 51.9823C57.2187 56.1989 56.2869 67.2777 57.6131 74.3927L32.038 72.3179ZM122.577 133.245C126.802 142.725 123.002 153.386 113.94 157.134C105.02 160.824 94.3791 156.137 90.1541 146.656C85.8619 137.026 89.6625 126.364 98.5827 122.674C107.644 118.926 118.285 123.614 122.577 133.245Z"
-                      fill="var(--color-primary)"
-                      fillOpacity="0.5" />
-                    <path d="M106.263 118.478L97.7661 122.126L112.262 155.888L120.76 152.24L106.263 118.478Z" fill="var(--color-primary)" fillOpacity="0.5" />
-                    <path
-                      d="M40.5389 68.6694C40.2036 67.9171 33.952 37.7101 65.5259 24.6497C86.764 15.8645 112.309 22.7637 121.765 43.9815C128.337 58.7287 122.025 72.033 111.183 83.8251C107.374 88.0736 109.111 92.3457 111.324 97.3113L115.079 105.738L91.7174 115.402L84.4073 98.9994C81.4566 92.3784 79.3253 86.8436 83.7521 79.8445C89.7733 70.4033 97.6427 66.6136 92.8811 55.9293C89.662 48.7063 82.2847 45.6984 75.9132 48.334C65.7193 52.5506 64.7875 63.6294 66.1137 70.7444L40.5389 68.6694ZM131.078 129.596C135.303 139.077 131.502 149.738 122.441 153.486C113.521 157.176 102.88 152.488 98.6547 143.008C94.3625 133.377 98.1631 122.716 107.083 119.026C116.145 115.278 126.786 119.966 131.078 129.596Z"
-                      fill="var(--color-primary)" />
-                    <path d="M31.3276 74.3447L39.825 70.6963L65.9923 71.8589L57.4953 75.5072L31.3276 74.3447Z" fill="var(--color-primary)" fillOpacity="0.4" />
-                  </g>
-                </svg>
-              </span>
-              {/* FAQ Header */}
-              <div className="mb-12 space-y-4 text-wrap text-center sm:mb-16 lg:mb-24">
-                <h2 className="text-base-content text-2xl font-semibold md:text-3xl lg:text-4xl">Frequently Asked Questions</h2>
-                <p className="text-base-content/80 text-xl">Levarage artificial intelligence algorithms to provide users with valuable insights</p>
-              </div>
-              {/* Faq stepper */}
-              <div id="faq-carousel-1" data-carousel='{ "loadingClasses": "opacity-0",  "slidesQty": { "xs": 1, "md": 2, "lg": 3 } }' className="relative w-full">
-                <div className="flex gap-1">
-                  {/* Previous Slide */}
-                  <button className="btn btn-circle carousel-prev btn-outline btn-primary hover:bg-primary relative hover:text-white max-md:hidden" disabled>
-                    <span className="icon-[tabler--arrow-left] size-5.5"></span>
-                  </button>
-                  <div className="carousel rounded-box">
-                    <div className="carousel-body h-full gap-12 opacity-0">
-                      {/* Slide 1 */}
-                      <div className="carousel-slide m-2">
-                        <div className="rounded-box hover:bg-base-100 hover:ring-primary p-4 text-center hover:ring">
-                          <h5 className="text-base-content mb-2 text-xl font-semibold">Do you offer home delivery?</h5>
-                          <p className="text-base-content/80">Yes, we do! You can place your order directly through our website or via trusted food delivery platforms like Swiggy and Zomato. We ensure that all dishes are packed with care and delivered promptly, so you can enjoy restaurant-quality food in the comfort of your home.</p>
-                          <div className="group mt-5 flex items-center justify-center gap-2">
-                            <a href="#" className="link link-animated link-primary font-normal">Learn more</a>
-                            <span className="icon-[tabler--arrow-narrow-right] text-primary size-5 shrink-0 transition-transform group-hover:-translate-x-1 rtl:rotate-180"></span>
-                          </div>
-                        </div>
-                      </div>
-                      {/* Slide 2 */}
-                      <div className="carousel-slide m-2">
-                        <div className="rounded-box hover:bg-base-100 hover:ring-primary p-4 text-center hover:ring">
-                          <h5 className="text-base-content mb-2 text-xl font-semibold">How can I book a table?</h5>
-                          <p className="text-base-content/80">Booking a table is simple and quick. Just head over to our reservation page, choose your preferred date and time, and confirm your booking in a few clicks. You’ll receive a confirmation instantly. Prefer to speak with someone? You can also call us directly.</p>
-                          <div className="group mt-5 flex items-center justify-center gap-2">
-                            <a href="#" className="link link-animated link-primary font-normal">Learn more</a>
-                            <span className="icon-[tabler--arrow-narrow-right] text-primary size-5 shrink-0 transition-transform group-hover:-translate-x-1 rtl:rotate-180"></span>
-                          </div>
-                        </div>
-                      </div>
-                      {/* Slide 3 */}
-                      <div className="carousel-slide m-2">
-                        <div className="rounded-box hover:bg-base-100 hover:ring-primary p-4 text-center hover:ring">
-                          <h5 className="text-base-content mb-2 text-xl font-semibold">What are your opening hours?</h5>
-                          <p className="text-base-content/80">We’re open every day from 11:00 AM to 11:00 PM, offering both lunch and dinner service. On weekends, we also serve a special brunch menu from 10:00 AM to 1:00 PM. Holiday hours may vary, so be sure to check our website or follow us on social media for real-time updates and special announcements.</p>
-                          <div className="group mt-5 flex items-center justify-center gap-2">
-                            <a href="#" className="link link-animated link-primary font-normal">Learn more</a>
-                            <span className="icon-[tabler--arrow-narrow-right] text-primary size-5 shrink-0 transition-transform group-hover:-translate-x-1 rtl:rotate-180"></span>
-                          </div>
-                        </div>
-                      </div>
-                      {/* Slide 4 */}
-                      <div className="carousel-slide m-2">
-                        <div className="rounded-box hover:bg-base-100 hover:ring-primary p-4 text-center hover:ring">
-                          <h5 className="text-base-content mb-2 text-xl font-semibold">What are your payment options ?</h5>
-                          <p className="text-base-content/80">We offer several payment options for your convenience, including credit/debit card payments, bank transfers, and online payment gateways. We also offer flexible payment plans for select travel packages.</p>
-                          <div className="group mt-5 flex items-center justify-center gap-2">
-                            <a href="#" className="link link-animated link-primary font-normal">Learn more</a>
-                            <span className="icon-[tabler--arrow-narrow-right] text-primary size-5 shrink-0 transition-transform group-hover:-translate-x-1 rtl:rotate-180"></span>
-                          </div>
-                        </div>
-                      </div>
-                      {/* Slide 5 */}
-                      <div className="carousel-slide m-2">
-                        <div className="rounded-box hover:bg-base-100 hover:ring-primary p-4 text-center hover:ring">
-                          <h5 className="text-base-content mb-2 text-xl font-semibold">Do you offer vegan options?</h5>
-                          <p className="text-base-content/80">Yes, we do! We offer a variety of vegan dishes that are both flavorful and satisfying. Our menu includes plant-based starters, mains, and even desserts.</p>
-                          <div className="group mt-5 flex items-center justify-center gap-2">
-                            <a href="#" className="link link-animated link-primary font-normal">Learn more</a>
-                            <span className="icon-[tabler--arrow-narrow-right] text-primary size-5 shrink-0 transition-transform group-hover:-translate-x-1 rtl:rotate-180"></span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  {/* Next Slide */}
-                  <button className="btn btn-circle carousel-next btn-primary btn-outline hover:bg-primary relative hover:text-white max-md:hidden">
-                    <span className="icon-[tabler--arrow-right] size-5.5"></span>
-                  </button>
-                </div>
-              </div>
-              <span className="intersect:motion-preset-slide-right intersect:motion-duration-800 intersect:motion-opacity-0 intersect:motion-delay-900 absolute start-[25%]">
-                <svg xmlns="http://www.w3.org/2000/svg" width="118" height="119" viewBox="0 0 118 119" fill="none">
-                  <g opacity="0.05">
-                    <path
-                      d="M36.4391 42.706C36.2091 42.1358 33.0723 19.7058 60.7168 12.1988C79.3118 7.1492 100.433 13.8137 106.922 29.8927C111.431 41.0682 105.143 50.3678 95.1291 58.2748C91.6043 61.1299 92.769 64.3566 94.2875 68.1195L96.8646 74.5057L76.4101 80.0602L71.3941 67.6302C69.3693 62.6128 67.9605 58.4399 72.2047 53.6183C77.9718 47.1176 84.8999 44.8567 81.6326 36.7601C79.4237 31.2864 73.3964 28.6212 67.8178 30.1361C58.8925 32.5598 57.3147 40.5801 57.9297 45.854L36.4391 42.706ZM108.7 92.9284C111.6 100.113 107.624 107.645 99.6907 109.799C91.8806 111.92 83.2115 107.821 80.3124 100.637C77.3672 93.339 81.3425 85.8064 89.1526 83.6856C97.0862 81.5312 105.755 85.6303 108.7 92.9284Z"
-                      fill="var(--color-primary)"
-                      fillOpacity="0.5" />
-                    <path d="M95.8779 81.1625L88.4385 83.2969L98.2235 108.915L105.663 106.78L95.8779 81.1625Z" fill="var(--color-primary)" fillOpacity="0.5" />
-                    <path
-                      d="M43.8796 40.5732C43.6495 40.003 40.5127 17.573 68.1572 10.066C86.7523 5.01639 107.874 11.6809 114.362 27.7599C118.872 38.9354 112.583 48.235 102.569 56.1421C99.0444 58.9972 100.209 62.2239 101.728 65.9868L104.305 72.3729L83.8502 77.9275L78.8342 65.4975C76.8094 60.48 75.4007 56.3072 79.6448 51.4856C85.412 44.9848 92.3401 42.724 89.0727 34.6274C86.8639 29.1537 80.8365 26.4884 75.2579 28.0033C66.3327 30.427 64.7548 38.4474 65.3699 43.7212L43.8796 40.5732ZM116.141 90.7956C119.04 97.98 115.064 105.512 107.131 107.667C99.3207 109.788 90.6516 105.689 87.7525 98.5046C84.8073 91.2062 88.7826 83.6737 96.5927 81.5528C104.527 79.3983 113.196 83.4976 116.141 90.7956Z"
-                      fill="var(--color-primary)" />
-                    <path d="M35.8188 44.1504L43.2582 42.0161L65.2665 44.5151L57.8274 46.6493L35.8188 44.1504Z" fill="var(--color-primary)" fillOpacity="0.4" />
-                  </g>
-                </svg>
-              </span>
-              <span className="intersect:motion-preset-slide-right intersect:motion-duration-800 intersect:motion-opacity-0 intersect:motion-delay-1500 absolute end-[35%] max-sm:hidden">
-                <svg xmlns="http://www.w3.org/2000/svg" width="116" height="150" viewBox="0 0 116 150" fill="none">
-                  <g opacity="0.08">
-                    <path
-                      d="M16.9554 30.3465C17.0827 29.5437 28.4181 0.863619 62.9102 5.34236C86.1113 8.35499 104.343 26.7815 100.753 49.421C98.258 65.1563 85.4391 73.3239 69.547 77.9789C63.906 79.7044 63.0386 84.1802 62.1985 89.4785L60.7728 98.4703L35.2516 95.1564L38.0267 77.6548C39.1468 70.5902 40.3728 64.8497 48.0714 61.0976C58.4992 56.0608 67.392 56.724 69.1996 45.3239C70.4216 37.6168 65.719 31.4347 58.7586 30.5309C47.6225 29.0849 40.6813 38.0158 37.885 44.6991L16.9554 30.3465ZM61.3688 126.569C59.7648 136.685 50.5783 143.849 40.6794 142.564C30.9348 141.298 24.3449 132.085 25.9488 121.97C27.5782 111.694 36.7648 104.529 46.5095 105.795C56.4083 107.08 62.9981 116.293 61.3688 126.569Z"
-                      fill="var(--color-primary)"
-                      fillOpacity="0.5" />
-                    <path d="M56.1439 106.729L46.9902 105.416L41.7716 141.786L50.9253 143.1L56.1439 106.729Z" fill="var(--color-primary)" fillOpacity="0.5" />
-                    <path
-                      d="M26.1092 31.661C26.2365 30.8582 37.5719 2.17807 72.064 6.65682C95.2651 9.66945 113.496 28.096 109.907 50.7355C107.412 66.4707 94.5929 74.6383 78.7005 79.2933C73.0594 81.0188 72.192 85.4946 71.3519 90.7929L69.9262 99.7847L44.4051 96.4708L47.1801 78.9692C48.3003 71.9046 49.5263 66.1641 57.2249 62.412C67.6526 57.3752 76.5455 58.0384 78.3531 46.6383C79.5751 38.9312 74.8724 32.7491 67.912 31.8453C56.776 30.3993 49.8347 39.3302 47.0384 46.0135L26.1092 31.661ZM70.5222 127.884C68.9183 137.999 59.7317 145.163 49.8329 143.878C40.0882 142.613 33.4984 133.4 35.1022 123.284C36.7316 113.008 45.9182 105.844 55.6629 107.109C65.5621 108.395 72.1515 117.608 70.5222 127.884Z"
-                      fill="var(--color-primary)" />
-                    <path d="M15.1777 30.0176L24.3314 31.331L46.0603 45.9576L36.907 44.6442L15.1777 30.0176Z" fill="var(--color-primary)" fillOpacity="0.4" />
-                  </g>
-                </svg>
-              </span>
-            </div>
-          </div>
-        </section>
+       
       </main>
 
       <footer>
@@ -711,40 +575,9 @@ export default function Home() {
           <div className="flex items-center justify-between gap-3 max-md:flex-col">
             <a href="index.html" className="text-base-content flex items-center gap-3 text-xl font-semibold">
               <span className="text-primary">
-                <svg width="32" height="32" viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <g clipPath="url(#clip0_18078_104881)">
-                    <mask id="mask0_18078_104881" style={{maskType: "luminance"}} maskUnits="userSpaceOnUse" x="0" y="0" width="34" height="34">
-                      <path d="M25.5 0H8.5C3.80558 0 0 3.80558 0 8.5V25.5C0 30.1944 3.80558 34 8.5 34H25.5C30.1944 34 34 30.1944 34 25.5V8.5C34 3.80558 30.1944 0 25.5 0Z" fill="white" />
-                    </mask>
-                    <g mask="url(#mask0_18078_104881)">
-                      <path d="M25.5 0H8.5C3.80558 0 0 3.80558 0 8.5V25.5C0 30.1944 3.80558 34 8.5 34H25.5C30.1944 34 34 30.1944 34 25.5V8.5C34 3.80558 30.1944 0 25.5 0Z" fill="url(#paint0_linear_18078_104881)" />
-                      <path
-                        d="M16.1238 20.1522C16.511 19.662 17.2479 19.6428 17.66 20.1122L20.5526 23.41C21.1194 24.0563 20.6611 25.0689 19.8016 25.0692H14.3055C13.47 25.0692 13.0026 24.1059 13.5203 23.4501L16.1238 20.1522ZM16.1326 8.45497C16.5308 7.95801 17.286 7.95453 17.6883 8.44813L27.5164 20.5077C28.0488 21.161 27.5838 22.1395 26.741 22.1395H24.4442C24.1428 22.1395 23.8577 22.0034 23.6678 21.7694L17.7029 14.4188C17.2962 13.9175 16.5285 13.927 16.1346 14.4384L10.7303 21.454C10.5411 21.6996 10.2484 21.8435 9.9383 21.8436H7.4881C6.64925 21.8436 6.18332 20.8733 6.70783 20.2186L16.1326 8.45497Z"
-                        fill="url(#paint1_linear_18078_104881)" />
-                    </g>
-                    <path d="M25.5002 0.707886H8.50017C4.19695 0.707886 0.708496 4.19634 0.708496 8.49956V25.4996C0.708496 29.8028 4.19695 33.2912 8.50017 33.2912H25.5002C29.8034 33.2912 33.2918 29.8028 33.2918 25.4996V8.49956C33.2918 4.19634 29.8034 0.707886 25.5002 0.707886Z" stroke="url(#paint2_linear_18078_104881)" strokeWidth="2" />
-                  </g>
-                  <defs>
-                    <linearGradient id="paint0_linear_18078_104881" x1="30.2812" y1="2.65625" x2="4.25" y2="32.4063" gradientUnits="userSpaceOnUse">
-                      <stop offset="0" stopColor="currentColor" />
-                      <stop offset="1" stopColor="currentColor" />
-                    </linearGradient>
-                    <linearGradient id="paint1_linear_18078_104881" x1="17.1147" y1="8.08008" x2="17.1147" y2="25.0692" gradientUnits="userSpaceOnUse">
-                      <stop offset="0" stopColor="white" />
-                      <stop offset="1" stopColor="white" stopOpacity="0.6" />
-                    </linearGradient>
-                    <linearGradient id="paint2_linear_18078_104881" x1="17.0002" y1="-0.000447931" x2="17.0002" y2="33.9996" gradientUnits="userSpaceOnUse">
-                      <stop offset="0" stopColor="white" stopOpacity="0.28" />
-                      <stop offset="1" stopColor="white" stopOpacity="0.04" />
-                    </linearGradient>
-                    <clipPath id="clip0_18078_104881">
-                      <rect width="34" height="34" fill="white" />
-                    </clipPath>
-                  </defs>
-                </svg>
               </span>
 
-              <span>Restaurant</span>
+        
             </a>
             <nav className="flex items-center gap-6">
               <a href="#about-us" className="link link-animated text-base-content/80 font-medium">About</a>
@@ -759,9 +592,7 @@ export default function Home() {
               <a href="#!" rel="noopener noreferrer" aria-label="Twitter">
                 <span className="icon-[tabler--brand-x] size-5"></span>
               </a>
-              <a href="#!" rel="noopener noreferrer" aria-label="Github">
-                <span className="icon-[tabler--brand-github] size-5"></span>
-              </a>
+             
             </div>
           </div>
         </div>
@@ -774,7 +605,7 @@ export default function Home() {
             <a href="index.html" className="text-primary">FlyonUI</a>
             ,
             <br className="md:hidden" />
-            Made With ❤️ for better web • Distributed by <a href="https://themewagon.com" target="_blank" className="text-primary">ThemeWagon</a>
+            Made With  for better web • Distributed by <a href="https://themewagon.com" target="_blank" className="text-primary">ThemeWagon</a>
           </div>
         </div>
       </footer>

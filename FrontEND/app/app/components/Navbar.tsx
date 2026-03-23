@@ -77,8 +77,8 @@ export default function Navbar() {
           <div id="navbar-block-4" className="lg:navbar-center transition-height collapse hidden grow overflow-hidden font-medium duration-300 lg:flex">
             <div className="text-base-content flex gap-6 text-base max-lg:mt-4 max-lg:flex-col lg:items-center">
               <Link href="/home" className="hover:text-primary nav-link">Home</Link>
-              <Link href="/home#about-us" className="hover:text-primary nav-link">About Us</Link>
               <Link href="/upload" className="hover:text-primary nav-link">Upload Picture</Link>
+              <Link href="/inventory" className="hover:text-primary nav-link">Inventory</Link>
             </div>
           </div>
           <div className="navbar-end max-lg:hidden flex gap-4">

@@ -45,7 +45,7 @@ export default function LoginPage() {
                 </defs>
               </svg>
             </span>
-            <h2 className="text-2xl font-bold">Welcome Back</h2>
+            <h2 className="text-2xl font-bold">Login</h2>
           </div>
 
           <form onSubmit={(e) => e.preventDefault()}>
@@ -79,7 +79,7 @@ export default function LoginPage() {
             </div>
 
             <div className="form-control mt-6">
-              <Link href="/upload" className="btn btn-primary w-full">
+              <Link href="/home" className="btn btn-primary w-full">
                 Sign In
               </Link>
             </div>
