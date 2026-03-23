@@ -1,0 +1,9 @@
+# .gitignore
+.env
+__pycache__/
+*.pyc
+*.db
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.backup
