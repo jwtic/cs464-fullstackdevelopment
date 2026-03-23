@@ -1,1 +1,0 @@
-# ImageProcessingService Placeholder
