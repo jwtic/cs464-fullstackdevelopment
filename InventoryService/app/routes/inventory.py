@@ -5,14 +5,17 @@ from typing import List
 from app.database import get_db
 from app.models import Ingredient
 from app.schemas import IngredientCreate, IngredientAI
+from app.auth import get_current_user_id
 
 
 router = APIRouter(prefix="/inventory", tags=["inventory"])
 
 
 @router.get("/")
-def get_inventory(user_id: str, db: Session = Depends(get_db)):
-
+def get_inventory(
+    user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db)
+):
     items = db.query(Ingredient).filter(
         Ingredient.user_id == user_id
     ).all()
@@ -22,11 +25,10 @@ def get_inventory(user_id: str, db: Session = Depends(get_db)):
 
 @router.post("/")
 def add_ingredient(
-    user_id: str,
     ingredient: IngredientCreate,
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db)
 ):
-
     item = Ingredient(
         user_id=user_id,
         name=ingredient.name,
@@ -40,13 +42,13 @@ def add_ingredient(
 
     return item
 
+
 @router.post("/ai")
 def add_ai_ingredients(
-    user_id: str,
     ingredients: List[IngredientAI],
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db)
 ):
-
     saved_items = []
 
     for ing in ingredients:
@@ -67,14 +69,14 @@ def add_ai_ingredients(
 
     return saved_items
 
+
 @router.put("/{ingredient_id}")
 def update_ingredient(
     ingredient_id: str,
-    user_id: str,
     ingredient: IngredientCreate,
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db)
 ):
-    
     item = db.query(Ingredient).filter(
         Ingredient.id == ingredient_id,
         Ingredient.user_id == user_id
@@ -92,13 +94,13 @@ def update_ingredient(
 
     return item
 
+
 @router.delete("/{ingredient_id}")
 def delete_ingredient(
     ingredient_id: str,
-    user_id: str,
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db)
 ):
-
     item = db.query(Ingredient).filter(
         Ingredient.id == ingredient_id,
         Ingredient.user_id == user_id
