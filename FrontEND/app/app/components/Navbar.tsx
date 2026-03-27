@@ -86,12 +86,10 @@ export default function Navbar() {
   <div 
     tabIndex={0} 
     role="button" 
-    className="btn btn-ghost btn-circle avatar" 
+    className="btn btn-ghost btn-circle" 
     onClick={toggleDropdown}
   >
-    <div className="w-10 rounded-full">
-      <img alt="User Avatar" src="/assets/img/avatars/1.png" />
-    </div>
+    <span className="icon-[tabler--user-circle] size-8"></span>
   </div>
 
   {/* Only render when open, fully absolute positioned */}
@@ -101,21 +99,13 @@ export default function Navbar() {
                   <div className="mb-4 px-2">
                     <h3 className="font-semibold text-lg mb-3">My Account</h3>
                     <div className="flex items-center gap-3 mb-3">
-                      <div className="avatar">
-                        <div className="w-12 rounded-full ring ring-primary ring-offset-base-100 ring-offset-1">
-                          <img alt="User Avatar" src="/assets/img/avatars/1.png" />
-                        </div>
+                      <div className="flex items-center justify-center w-12 h-12 rounded-full bg-base-200 ring ring-primary ring-offset-base-100 ring-offset-1">
+                          <span className="icon-[tabler--user] size-6"></span>
                       </div>
                       <div>
                         <div className="font-bold text-lg">User Name</div>
-                        <div className="text-xs text-success flex items-center gap-1 font-medium">
-                          <span className="badge badge-xs badge-success"></span> Sync is on
-                        </div>
                       </div>
                     </div>
-                    <Link href="/profile" className="text-primary text-sm hover:underline font-medium" onClick={closeDropdown}>
-                      Manage profile settings
-                    </Link>
                   </div>
 
                   <hr className="border-base-content/10 my-2" />
