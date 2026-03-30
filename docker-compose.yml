@@ -105,6 +105,25 @@ services:
       - app-network
 
   # ─────────────────────────────────────────
+  # Image Processing Service  →  port 5003
+  # ─────────────────────────────────────────
+  image_processing_service:
+    build: ./ImageProcessingService
+    container_name: image-processing-service
+    env_file:
+      - ./ImageProcessingService/.env
+    environment:
+      CORS_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
+    ports:
+      - "5003:5003"
+    command: uvicorn main:app --host 0.0.0.0 --port 5003 --reload
+    volumes:
+      - ./ImageProcessingService:/app
+    working_dir: /app
+    networks:
+      - app-network
+
+  # ─────────────────────────────────────────
   # Frontend (Next.js) — add a Dockerfile to FrontEND/ to enable this
   # ─────────────────────────────────────────
   # frontend:
@@ -114,10 +133,12 @@ services:
   #     - user_service
   #     - inventory_service
   #     - recipe_service
+  #     - image_processing_service
   #   environment:
   #     NEXT_PUBLIC_USER_SERVICE_URL: http://localhost:5000
   #     NEXT_PUBLIC_INVENTORY_SERVICE_URL: http://localhost:5001
   #     NEXT_PUBLIC_RECIPE_SERVICE_URL: http://localhost:5002
+  #     NEXT_PUBLIC_IMAGE_PROCESSING_SERVICE_URL: http://localhost:5003
   #   ports:
   #     - "3000:3000"
   #   networks:

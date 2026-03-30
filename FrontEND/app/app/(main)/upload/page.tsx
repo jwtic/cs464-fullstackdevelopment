@@ -1,78 +1,197 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import React from "react";
 
 
 interface IngredientAI {
+    id: number;
   name: string;
   quantity: number;
   unit: string;
+    selected: boolean;
 }
 
+type UploadMode = "receipt" | "fridge";
+
+const IMAGE_PROCESSING_BASE_URL =
+    process.env.NEXT_PUBLIC_IMAGE_PROCESSING_SERVICE_URL ?? "http://localhost:5003";
+const INVENTORY_BASE_URL =
+    process.env.NEXT_PUBLIC_INVENTORY_SERVICE_URL ?? "http://localhost:5001";
+
 export default function UploadPage() {
+    const [mode, setMode] = useState<UploadMode>("fridge");
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [ingredients, setIngredients] = useState<IngredientAI[]>([]);
   const [showIngredients, setShowIngredients] = useState(false);
   const [addingToInventory, setAddingToInventory] = useState(false);
   const [addedSuccess, setAddedSuccess] = useState(false);
+    const [analyzeError, setAnalyzeError] = useState<string | null>(null);
+    const [nextIngredientId, setNextIngredientId] = useState(1);
 
-  const userId = "user123";
+    useEffect(() => {
+        return () => {
+            if (selectedImage) {
+                URL.revokeObjectURL(selectedImage);
+            }
+        };
+    }, [selectedImage]);
+
+    const resetUpload = () => {
+        if (selectedImage) {
+            URL.revokeObjectURL(selectedImage);
+        }
+
+        setSelectedFile(null);
+        setSelectedImage(null);
+        setIngredients([]);
+        setShowIngredients(false);
+        setAnalyzing(false);
+        setAnalyzeError(null);
+        setAddedSuccess(false);
+        setNextIngredientId(1);
+    };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
      if (e.target.files && e.target.files[0]) {
-         setSelectedImage(URL.createObjectURL(e.target.files[0]));
+                 if (selectedImage) {
+                        URL.revokeObjectURL(selectedImage);
+                 }
+
+                 const file = e.target.files[0];
+                 setSelectedFile(file);
+                 setSelectedImage(URL.createObjectURL(file));
          setShowIngredients(false);
          setAddedSuccess(false);
+                 setAnalyzeError(null);
          setIngredients([]);
+                 setNextIngredientId(1);
      }
   };
 
-  const handleAnalyze = () => {
-      setAnalyzing(true);
-      // Mock API call to analyze image
-      setTimeout(() => {
-          setIngredients([
-              { name: "Tomato", quantity: 5, unit: "pcs" },
-              { name: "Mozzarella Cheese", quantity: 200, unit: "g" },
-              { name: "Basil", quantity: 1, unit: "bunch" },
-              { name: "Olive Oil", quantity: 1, unit: "bottle" },
-          ]);
-          setAnalyzing(false);
-          setShowIngredients(true);
-      }, 2000);
+    const handleAnalyze = async () => {
+            if (!selectedFile) {
+                setAnalyzeError("Please upload an image first.");
+                return;
+            }
+
+            setAnalyzeError(null);
+            setAddedSuccess(false);
+            setAnalyzing(true);
+
+            try {
+                const formData = new FormData();
+                formData.append("file", selectedFile);
+
+                const endpoint = `${IMAGE_PROCESSING_BASE_URL}/analyze/${mode}`;
+                const response = await fetch(endpoint, {
+                    method: "POST",
+                    body: formData,
+                });
+
+                const data = await response.json();
+                if (!response.ok) {
+                    const detail = typeof data?.detail === "string" ? data.detail : "Analysis failed.";
+                    throw new Error(detail);
+                }
+
+                const rawItems: unknown[] = Array.isArray(data?.items) ? data.items : [];
+                const names = rawItems.filter((value: unknown): value is string => typeof value === "string");
+
+                const mapped: IngredientAI[] = names.map((name: string, index: number) => ({
+                    id: index + 1,
+                    name,
+                    quantity: 1,
+                    unit: "pcs",
+                    selected: true,
+                }));
+
+                setIngredients(mapped);
+                setNextIngredientId(mapped.length + 1);
+                setShowIngredients(true);
+            } catch (error) {
+                const message = error instanceof Error ? error.message : "Unable to reach image processing service.";
+                setAnalyzeError(message);
+                setShowIngredients(false);
+            } finally {
+                setAnalyzing(false);
+            }
   };
 
-  const handleAddToInventory = async () => {
-        setAddingToInventory(true);
-        // Simulate API call
-        setTimeout(() => {
-            setAddedSuccess(true);
-            setAddingToInventory(false);
-        }, 1500);
-        
-        // try {
-        //     const response = await fetch(`http://localhost:8000/inventory/ai?user_id=${userId}`, {
-        //         method: "POST",
-        //         headers: {
-        //             "Content-Type": "application/json",
-        //         },
-        //         body: JSON.stringify(ingredients),
-        //     });
+    const updateIngredient = (id: number, field: "name" | "quantity" | "unit" | "selected", value: string | number | boolean) => {
+        setIngredients((prev) =>
+            prev.map((ingredient) =>
+                ingredient.id === id ? { ...ingredient, [field]: value } : ingredient
+            )
+        );
+    };
 
-        //     if (response.ok) {
-        //         setAddedSuccess(true);
-        //     } else {
-        //         console.error("Failed to add to inventory");
-        //     }
-        // } catch (error) {
-        //     console.error("Error adding to inventory:", error);
-        // } finally {
-        //     setAddingToInventory(false);
-        // }
+    const addIngredientRow = () => {
+        setIngredients((prev) => [
+            ...prev,
+            {
+                id: nextIngredientId,
+                name: "",
+                quantity: 1,
+                unit: "pcs",
+                selected: true,
+            },
+        ]);
+        setNextIngredientId((prev) => prev + 1);
+    };
+
+    const selectedIngredients = ingredients.filter((item) => item.selected && item.name.trim().length > 0);
+
+  const handleAddToInventory = async () => {
+                if (selectedIngredients.length === 0) {
+                        setAnalyzeError("Select at least one ingredient before adding to inventory.");
+                        return;
+                }
+
+                setAnalyzeError(null);
+        setAddingToInventory(true);
+        try {
+            const token = localStorage.getItem("access_token");
+            if (!token) {
+                setAnalyzeError("Please log in before adding ingredients to inventory.");
+                return;
+            }
+
+            const payload = selectedIngredients.map((item) => ({
+                name: item.name.trim(),
+                quantity: Number.isFinite(item.quantity) ? item.quantity : 1,
+                unit: item.unit.trim() || null,
+            }));
+
+            const response = await fetch(`${INVENTORY_BASE_URL}/inventory/ai`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify(payload),
+            });
+
+            if (response.status === 401) {
+                setAnalyzeError("Session expired. Please log in again.");
+                return;
+            }
+
+            if (!response.ok) {
+                setAnalyzeError("Failed to add ingredients to inventory.");
+                return;
+            }
+
+            setAddedSuccess(true);
+        } catch {
+            setAnalyzeError("Unable to reach the inventory service.");
+        } finally {
+            setAddingToInventory(false);
+        }
   };
 
   return (
@@ -85,6 +204,24 @@ export default function UploadPage() {
             <div className="text-center mb-10">
                <h1 className="text-4xl font-bold mb-4">What's in your fridge?</h1>
                <p className="text-xl text-base-content/70">Upload a picture of your ingredients to manage your inventory.</p>
+                             <div className="mt-6 flex justify-center">
+                                    <div className="join">
+                                        <button
+                                            type="button"
+                                            className={`btn join-item ${mode === "fridge" ? "btn-primary" : "btn-outline"}`}
+                                            onClick={() => setMode("fridge")}
+                                        >
+                                            Fridge Image
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className={`btn join-item ${mode === "receipt" ? "btn-primary" : "btn-outline"}`}
+                                            onClick={() => setMode("receipt")}
+                                        >
+                                            Receipt Image
+                                        </button>
+                                    </div>
+                             </div>
             </div>
 
             {/* Upload Section */}
@@ -95,7 +232,7 @@ export default function UploadPage() {
                           <div className="mb-6 rounded-full bg-primary/10 p-6">
                             <span className="icon-[tabler--camera] text-6xl text-primary"></span>
                           </div>
-                          <h3 className="text-2xl font-bold mb-2">Upload or Take a Photo</h3>
+                                                    <h3 className="text-2xl font-bold mb-2">Upload {mode === "receipt" ? "a Receipt" : "a Fridge Image"}</h3>
                           <p className="text-base-content/60 mb-8 max-w-md">Supported formats: JPG, PNG. Max file size: 5MB.</p>
                           <div className="form-control w-full max-w-xs mx-auto">
                             <input 
@@ -118,9 +255,9 @@ export default function UploadPage() {
                              />
                           </div>
                           <div className="flex gap-4">
-                             <button className="btn btn-outline btn-error" onClick={() => setSelectedImage(null)}>
+                                      <button className="btn btn-outline btn-error" onClick={resetUpload}>
                                 <span className="icon-[tabler--trash] size-5"></span>
-                                Remove
+                                          Reset
                              </button>
                              {!showIngredients && (
                                  <button 
@@ -147,6 +284,13 @@ export default function UploadPage() {
                </div>
             </div>
 
+            {analyzeError && (
+                <div className="alert alert-error mb-8">
+                    <span className="icon-[tabler--alert-circle] size-6"></span>
+                    <span>{analyzeError}</span>
+                </div>
+            )}
+
             {/* Ingredients Section */}
             {showIngredients && (
                 <div className="slide-in-bottom fade-in duration-500">
@@ -158,21 +302,48 @@ export default function UploadPage() {
                     </div>
                     
                     <div className="bg-base-200 rounded-xl p-6 mb-8">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {ingredients.map((item, index) => (
-                                <div key={index} className="flex items-center justify-between p-4 bg-base-100 rounded-lg shadow-sm">
-                                    <div className="flex items-center gap-3">
+                        <div className="grid grid-cols-1 gap-4">
+                            {ingredients.map((item) => (
+                                <div key={item.id} className="p-4 bg-base-100 rounded-lg shadow-sm">
+                                    <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
                                         <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary">
                                             <span className="icon-[tabler--salad] size-6"></span>
                                         </div>
-                                        <div>
-                                            <span className="font-bold block">{item.name}</span>
-                                            <span className="text-sm opacity-70">{item.quantity} {item.unit}</span>
-                                        </div>
+                                        <input
+                                            className="input input-bordered md:col-span-4"
+                                            value={item.name}
+                                            onChange={(event) => updateIngredient(item.id, "name", event.target.value)}
+                                            placeholder="Ingredient name"
+                                        />
+                                        <input
+                                            type="number"
+                                            min={0}
+                                            className="input input-bordered md:col-span-2"
+                                            value={item.quantity}
+                                            onChange={(event) => updateIngredient(item.id, "quantity", Number(event.target.value))}
+                                        />
+                                        <input
+                                            className="input input-bordered md:col-span-2"
+                                            value={item.unit}
+                                            onChange={(event) => updateIngredient(item.id, "unit", event.target.value)}
+                                            placeholder="unit"
+                                        />
+                                        <label className="label cursor-pointer gap-2 md:col-span-2 justify-start">
+                                            <input
+                                                type="checkbox"
+                                                className="checkbox checkbox-primary"
+                                                checked={item.selected}
+                                                onChange={(event) => updateIngredient(item.id, "selected", event.target.checked)}
+                                            />
+                                            <span className="label-text">Include</span>
+                                        </label>
                                     </div>
-                                    <input type="checkbox" className="checkbox checkbox-primary" defaultChecked />
                                 </div>
                             ))}
+                            <button className="btn btn-outline w-fit" onClick={addIngredientRow}>
+                                <span className="icon-[tabler--plus] size-5"></span>
+                                Add Ingredient Manually
+                            </button>
                         </div>
                     </div>
 
@@ -207,7 +378,7 @@ export default function UploadPage() {
                                 ) : (
                                     <>
                                         <span className="icon-[tabler--plus] size-5"></span>
-                                        Add All to Inventory
+                                        Add Selected to Inventory
                                     </>
                                 )}
                             </button>

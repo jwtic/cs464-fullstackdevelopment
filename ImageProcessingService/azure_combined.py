@@ -8,14 +8,21 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
+# This is a script not a container , RUN MAIN.PY for the container.
+
 class SmartPantryAI:
     def __init__(self):
         self.subscription_key = os.getenv("AZURE_SUBSCRIPTION_KEY")
         self.endpoint = os.getenv("AZURE_ENDPOINT")
+        if self.endpoint and not self.endpoint.endswith("/"):
+            self.endpoint = f"{self.endpoint}/"
         self.analyze_url = f"{self.endpoint}computervision/imageanalysis:analyze"
 
         if not self.subscription_key:
             raise ValueError("Missing API Key! Please set AZURE_SUBSCRIPTION_KEY in your .env file.")
+        if not self.endpoint:
+            raise ValueError("Missing endpoint! Please set AZURE_ENDPOINT in your .env file.")
         
         # Knowledge Bases
         self.food_database = [
@@ -45,13 +52,7 @@ class SmartPantryAI:
             return self._call_azure(image_bytes, features)
         return response.json()
 
-    # API 1: RECEIPT
-    def audit_receipt(self, image_path):
-        print(f"\n--- [API: RECEIPT] Analyzing: {image_path} ---")
-        with open(image_path, "rb") as f:
-            data = f.read()
-        
-        result = self._call_azure(data, "read")
+    def _extract_receipt_items_from_result(self, result):
         lines = []
         for block in result.get("readResult", {}).get("blocks", []):
             for line in block.get("lines", []):
@@ -61,39 +62,59 @@ class SmartPantryAI:
         for line in lines:
             line_up = line.upper()
             for short, full in self.shorthand_map.items():
-                if short in line_up: detected.add(full)
+                if short in line_up:
+                    detected.add(full)
             for food in self.food_database:
-                if re.search(r'\b' + food.upper() + r'\b', line_up): detected.add(food)
-        
+                if re.search(r'\b' + food.upper() + r'\b', line_up):
+                    detected.add(food)
+
         return sorted(list(detected))
 
-    # API 2: FRIDGE
-    def scan_fridge(self, image_path):
-        print(f"\n--- [API: FRIDGE] Scanning: {image_path} ---")
-        img = Image.open(image_path)
+    def audit_receipt_bytes(self, image_bytes):
+        result = self._call_azure(image_bytes, "read")
+        return self._extract_receipt_items_from_result(result)
+
+    def scan_fridge_bytes(self, image_bytes):
+        img = Image.open(io.BytesIO(image_bytes))
         w, h = img.size
-        
+
         tiles = self._get_tiles(w, h)
         inventory = set()
 
-        for i, box in enumerate(tiles):
-            print(f" Scanning Window {i+1}/{len(tiles)}...", end="\r")
+        for box in tiles:
             tile_img = img.crop(box)
             buf = io.BytesIO()
             tile_img.save(buf, format='PNG')
-            
+
             result = self._call_azure(buf.getvalue(), "denseCaptions")
             captions = result.get('denseCaptionsResult', {}).get('values', [])
-            
+
             for item in captions:
                 text = item['text'].lower()
                 for food in self.fridge_whitelist:
                     if food in text:
                         name = food.title() if food != "grape" else "Grapes"
                         inventory.add(name)
-        
-        print("\n Fridge Scan Complete.")
+
         return sorted(list(inventory))
+
+    # API 1: RECEIPT
+    def audit_receipt(self, image_path):
+        print(f"\n--- [API: RECEIPT] Analyzing: {image_path} ---")
+        with open(image_path, "rb") as f:
+            data = f.read()
+
+        return self.audit_receipt_bytes(data)
+
+    # API 2: FRIDGE
+    def scan_fridge(self, image_path):
+        print(f"\n--- [API: FRIDGE] Scanning: {image_path} ---")
+        with open(image_path, "rb") as f:
+            data = f.read()
+
+        inventory = self.scan_fridge_bytes(data)
+        print("\n Fridge Scan Complete.")
+        return inventory
 
     def _get_tiles(self, w, h):
         tiles = []
