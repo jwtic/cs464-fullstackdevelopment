@@ -2,6 +2,7 @@ import os
 import json
 import httpx
 
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 PROMPT_TEMPLATE = """
@@ -47,8 +48,16 @@ Return ONLY valid JSON in this format:
 """
 
 async def generate_recipe_suggestions(ingredients: list[str]):
-    if not OPENAI_API_KEY:
-        raise ValueError("OPENAI_API_KEY is not configured on the server.")
+    if OPENROUTER_API_KEY:
+        api_key = OPENROUTER_API_KEY
+        api_url = "https://openrouter.ai/api/v1/chat/completions"
+        model = os.getenv("OPENROUTER_MODEL", "openai/gpt-4o-mini")
+    elif OPENAI_API_KEY:
+        api_key = OPENAI_API_KEY
+        api_url = "https://api.openai.com/v1/chat/completions"
+        model = "gpt-4o-mini"
+    else:
+        raise ValueError("Neither OPENROUTER_API_KEY nor OPENAI_API_KEY is configured on the server.")
 
     ingredient_text = "\n".join(f"- {item}" for item in ingredients)
 
@@ -60,12 +69,16 @@ User ingredients:
 """
 
     headers = {
-        "Authorization": f"Bearer {OPENAI_API_KEY}",
+        "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
 
+    if api_url.startswith("https://openrouter.ai"):
+        headers["HTTP-Referer"] = os.getenv("OPENROUTER_HTTP_REFERER", "http://localhost:3000")
+        headers["X-Title"] = os.getenv("OPENROUTER_APP_NAME", "Smart Pantry")
+
     payload = {
-        "model": "gpt-4.1-mini",
+        "model": model,
         "messages": [
             {"role": "system", "content": "You are a helpful cooking assistant."},
             {"role": "user", "content": prompt},
@@ -74,11 +87,7 @@ User ingredients:
     }
 
     async with httpx.AsyncClient(timeout=60.0) as client:
-        response = await client.post(
-            "https://api.openai.com/v1/chat/completions",
-            headers=headers,
-            json=payload,
-        )
+        response = await client.post(api_url, headers=headers, json=payload)
         response.raise_for_status()
         data = response.json()
 
