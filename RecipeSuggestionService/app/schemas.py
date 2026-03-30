@@ -4,6 +4,7 @@ from typing import List
 
 class RecipeSuggestRequest(BaseModel):
     user_id: str
+    ingredients: List[str] = []
 
 
 class RecipeItem(BaseModel):

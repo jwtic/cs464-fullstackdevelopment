@@ -9,7 +9,10 @@ router = APIRouter(prefix="/recipes", tags=["recipes"])
 @router.post("/suggest")
 async def suggest_recipes(request: RecipeSuggestRequest):
     try:
-        inventory_items = await get_user_inventory(request.user_id)
+        if request.ingredients:
+            inventory_items = request.ingredients
+        else:
+            inventory_items = await get_user_inventory(request.user_id)
 
         if not inventory_items:
             return {
