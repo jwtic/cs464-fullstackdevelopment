@@ -98,6 +98,9 @@ async def call_openrouter_api(prompt: str) -> str:
     return data["choices"][0]["message"]["content"]
 
 async def generate_recipe_suggestions(ingredients: list[str]):
+    if not OPENAI_API_KEY:
+        raise ValueError("OPENAI_API_KEY is not configured on the server.")
+
     ingredient_text = "\n".join(f"- {item}" for item in ingredients)
 
     prompt = f"""
