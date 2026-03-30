@@ -2,10 +2,54 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
+  const [usernameOrEmail, setUsernameOrEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const router = useRouter();
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError("");
+
+    if (!usernameOrEmail.trim() || !password) {
+      setError("Please enter both username/email and password.");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      const baseUrl = process.env.NEXT_PUBLIC_USER_SERVICE_URL ?? "http://localhost:5000";
+      const response = await fetch(`${baseUrl}/auth/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username_or_email: usernameOrEmail,
+          password,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        setError(data?.detail || "Login failed. Please try again.");
+        return;
+      }
+
+      const data = await response.json();
+      localStorage.setItem("access_token", data.access_token);
+      localStorage.setItem("token_type", data.token_type || "bearer");
+      router.push("/home");
+    } catch {
+      setError("Unable to reach the user service. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-base-200">
@@ -48,17 +92,17 @@ export default function LoginPage() {
             <h2 className="text-2xl font-bold">Login</h2>
           </div>
 
-          <form onSubmit={(e) => e.preventDefault()}>
+          <form onSubmit={handleSubmit}>
             <div className="form-control w-full">
               <label className="label">
-                <span className="label-text">Email</span>
+                <span className="label-text">Username or Email</span>
               </label>
               <input 
-                type="email" 
-                placeholder="email@example.com" 
+                type="text" 
+                placeholder="username or email" 
                 className="input input-bordered w-full" 
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                value={usernameOrEmail}
+                onChange={(e) => setUsernameOrEmail(e.target.value)}
               />
             </div>
 
@@ -78,16 +122,22 @@ export default function LoginPage() {
               </label>
             </div>
 
+            {error ? (
+              <p className="mt-3 text-sm text-error" role="alert">
+                {error}
+              </p>
+            ) : null}
+
             <div className="form-control mt-6">
-              <Link href="/home" className="btn btn-primary w-full">
-                Sign In
-              </Link>
+              <button type="submit" className="btn btn-primary w-full" disabled={isSubmitting}>
+                {isSubmitting ? "Signing In..." : "Sign In"}
+              </button>
             </div>
           </form>
           
           <div className="text-center mt-4">
              <span className="text-sm">Don't have an account? </span>
-             <Link href="/home" className="link link-primary text-sm">Sign up</Link>
+             <Link href="/register" className="link link-primary text-sm">Sign up</Link>
           </div>
         </div>
       </div>

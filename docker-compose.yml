@@ -1,0 +1,131 @@
+version: "3.9"
+
+services:
+
+  # ─────────────────────────────────────────
+  # Shared PostgreSQL — creates userdb + inventorydb on first boot
+  # ─────────────────────────────────────────
+  db:
+    image: postgres:15
+    container_name: shared-db
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: postgres          # default db required by the image
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-admin} -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - app-network
+
+  # ─────────────────────────────────────────
+  # User Service  →  port 5000
+  # ─────────────────────────────────────────
+  user_service:
+    build: ./UserService
+    container_name: user-service
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-password}@db:5432/userdb
+      CORS_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
+      JWT_SECRET: ${JWT_SECRET:-supersecret}
+    ports:
+      - "5000:5000"
+    command: >
+      sh -c "
+        echo 'Waiting for Postgres...' &&
+        until pg_isready -h db -p 5432 -U ${POSTGRES_USER:-admin}; do
+          echo 'Waiting...' && sleep 2
+        done &&
+        uvicorn app.main:app --host 0.0.0.0 --port 5000 --reload
+      "
+    volumes:
+      - ./UserService:/app
+    working_dir: /app
+    networks:
+      - app-network
+
+  # ─────────────────────────────────────────
+  # Inventory Service  →  port 5001
+  # ─────────────────────────────────────────
+  inventory_service:
+    build: ./InventoryService
+    container_name: inventory-service
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-password}@db:5432/inventorydb
+      JWT_SECRET: ${JWT_SECRET:-supersecret}
+      CORS_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
+    ports:
+      - "5001:5001"
+    command: >
+      sh -c "
+        echo 'Waiting for Postgres...' &&
+        until pg_isready -h db -p 5432 -U ${POSTGRES_USER:-admin}; do
+          echo 'Waiting...' && sleep 2
+        done &&
+        uvicorn app.main:app --host 0.0.0.0 --port 5001 --reload
+      "
+    volumes:
+      - ./InventoryService:/app
+    working_dir: /app
+    networks:
+      - app-network
+
+  # ─────────────────────────────────────────
+  # Recipe Suggestion Service  →  port 5002
+  # ─────────────────────────────────────────
+  recipe_service:
+    build: ./RecipeSuggestionService
+    container_name: recipe-service
+    depends_on:
+      - inventory_service
+    environment:
+      INVENTORY_SERVICE_URL: http://inventory-service:5001
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+    ports:
+      - "5002:5002"
+    command: uvicorn app.main:app --host 0.0.0.0 --port 5002 --reload
+    volumes:
+      - ./RecipeSuggestionService:/app
+    working_dir: /app
+    networks:
+      - app-network
+
+  # ─────────────────────────────────────────
+  # Frontend (Next.js) — add a Dockerfile to FrontEND/ to enable this
+  # ─────────────────────────────────────────
+  # frontend:
+  #   build: ./FrontEND/app
+  #   container_name: frontend
+  #   depends_on:
+  #     - user_service
+  #     - inventory_service
+  #     - recipe_service
+  #   environment:
+  #     NEXT_PUBLIC_USER_SERVICE_URL: http://localhost:5000
+  #     NEXT_PUBLIC_INVENTORY_SERVICE_URL: http://localhost:5001
+  #     NEXT_PUBLIC_RECIPE_SERVICE_URL: http://localhost:5002
+  #   ports:
+  #     - "3000:3000"
+  #   networks:
+  #     - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  pgdata:
