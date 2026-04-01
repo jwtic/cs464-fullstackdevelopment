@@ -5,6 +5,7 @@ import time
 from PIL import Image
 import os
 from dotenv import load_dotenv
+from ingredient_catalog import get_ingredient_catalog, init_ingredient_catalog_db
 
 load_dotenv()
 
@@ -24,11 +25,8 @@ class SmartPantryAI:
         if not self.endpoint:
             raise ValueError("Missing endpoint! Please set AZURE_ENDPOINT in your .env file.")
         
-        # Knowledge Bases
-        self.food_database = [
-            "Butter", "Onion", "Bacon", "Milk", "Flour", "Eggs", 
-            "Chicken", "Rice", "Bread", "Apple", "Banana", "Tomato", "Coffee"
-        ]
+        # Seed/ensure ingredient catalog table exists.
+        init_ingredient_catalog_db()
         self.shorthand_map = {
             "FLOU": "Flour", "BACON": "Bacon", "UNSALTD": "Butter",
             "YELL": "Onion", "MILK": "Milk", "EGGS": "Eggs"
@@ -53,6 +51,7 @@ class SmartPantryAI:
         return response.json()
 
     def _extract_receipt_items_from_result(self, result):
+        food_database = get_ingredient_catalog()
         lines = []
         for block in result.get("readResult", {}).get("blocks", []):
             for line in block.get("lines", []):
@@ -64,7 +63,7 @@ class SmartPantryAI:
             for short, full in self.shorthand_map.items():
                 if short in line_up:
                     detected.add(full)
-            for food in self.food_database:
+            for food in food_database:
                 if re.search(r'\b' + food.upper() + r'\b', line_up):
                     detected.add(food)
 
