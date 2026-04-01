@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 from typing import List
 
@@ -6,6 +6,7 @@ from app.database import get_db
 from app.models import Ingredient
 from app.schemas import IngredientCreate, IngredientAI
 from app.auth import get_current_user_id
+from app.services.smart_pantry_ai import SmartPantryAI
 
 
 router = APIRouter(prefix="/inventory", tags=["inventory"])
@@ -70,6 +71,32 @@ def add_ai_ingredients(
     return saved_items
 
 
+@router.post("/detect", response_model=List[IngredientAI])
+async def detect_ingredients(
+    image: UploadFile = File(...),
+    mode: str = "fridge",
+):
+    """
+    Detect ingredients from an uploaded image using Azure Computer Vision.
+    mode:
+      - fridge: dense captions + whitelist matching
+      - receipt: OCR ("read") + keyword matching
+    """
+    if mode not in {"fridge", "receipt"}:
+        raise HTTPException(status_code=400, detail="mode must be 'fridge' or 'receipt'")
+
+    content = await image.read()
+    if not content:
+        raise HTTPException(status_code=400, detail="Empty image upload")
+
+    try:
+        pantry = SmartPantryAI()
+        names = pantry.detect_ingredients(content, mode=mode)  # type: ignore[arg-type]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Detection failed: {e}")
+
+    # Return IngredientAI objects (quantity/unit can be refined later)
+    return [IngredientAI(name=n, quantity=1, unit=None) for n in names]
 @router.put("/{ingredient_id}")
 def update_ingredient(
     ingredient_id: str,

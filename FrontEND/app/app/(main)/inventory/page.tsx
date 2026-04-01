@@ -7,7 +7,7 @@ interface Ingredient {
   id: string;
   name: string;
   quantity: number;
-  unit: string;
+  unit: string | null;
 }
 
 const BASE_URL = process.env.NEXT_PUBLIC_INVENTORY_SERVICE_URL ?? "http://localhost:5001";
@@ -32,7 +32,7 @@ export default function InventoryPage() {
   const [newUnit, setNewUnit] = useState("pcs");
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState("");
-
+  
   useEffect(() => {
     fetchInventory();
   }, []);
@@ -159,7 +159,7 @@ export default function InventoryPage() {
                   <div className="card-body flex-row items-center justify-between p-6">
                     <div>
                       <h3 className="text-xl font-bold">{item.name}</h3>
-                      <p className="text-base-content/70">{item.quantity} {item.unit}</p>
+                      <p className="text-base-content/70">{item.quantity} {item.unit ?? ""}</p>
                     </div>
                     <button
                       className="btn btn-error btn-outline btn-sm"

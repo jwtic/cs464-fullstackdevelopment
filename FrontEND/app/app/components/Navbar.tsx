@@ -79,7 +79,7 @@ export default function Navbar() {
               <Link href="/home" className="hover:text-primary nav-link">Home</Link>
               <Link href="/upload" className="hover:text-primary nav-link">Upload Picture</Link>
               <Link href="/inventory" className="hover:text-primary nav-link">Inventory</Link>
-              <Link href="/recipes" className="hover:text-primary nav-link">Recipes</Link>
+              <Link href="/recipe" className="hover:text-primary nav-link">Recipes</Link>
             </div>
           </div>
           <div className="navbar-end max-lg:hidden flex gap-4">
