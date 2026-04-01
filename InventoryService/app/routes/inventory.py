@@ -5,7 +5,7 @@ from typing import List
 from app.database import get_db
 from app.models import Ingredient
 from app.schemas import IngredientCreate, IngredientAI
-from app.auth import get_current_user_id
+from app.auth import get_user_id_or_query
 from app.services.smart_pantry_ai import SmartPantryAI
 
 
@@ -14,7 +14,7 @@ router = APIRouter(prefix="/inventory", tags=["inventory"])
 
 @router.get("/")
 def get_inventory(
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_user_id_or_query),
     db: Session = Depends(get_db)
 ):
     items = db.query(Ingredient).filter(
@@ -27,7 +27,7 @@ def get_inventory(
 @router.post("/")
 def add_ingredient(
     ingredient: IngredientCreate,
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_user_id_or_query),
     db: Session = Depends(get_db)
 ):
     item = Ingredient(
@@ -47,7 +47,7 @@ def add_ingredient(
 @router.post("/ai")
 def add_ai_ingredients(
     ingredients: List[IngredientAI],
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_user_id_or_query),
     db: Session = Depends(get_db)
 ):
     saved_items = []
@@ -101,7 +101,7 @@ async def detect_ingredients(
 def update_ingredient(
     ingredient_id: str,
     ingredient: IngredientCreate,
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_user_id_or_query),
     db: Session = Depends(get_db)
 ):
     item = db.query(Ingredient).filter(
@@ -125,7 +125,7 @@ def update_ingredient(
 @router.delete("/{ingredient_id}")
 def delete_ingredient(
     ingredient_id: str,
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_user_id_or_query),
     db: Session = Depends(get_db)
 ):
     item = db.query(Ingredient).filter(

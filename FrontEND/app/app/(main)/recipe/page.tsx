@@ -86,6 +86,7 @@ const RECIPE_LIBRARY: Recipe[] = [
 
 export default function RecipePage() {
   const userId = "user123";
+  const baseUrl = process.env.NEXT_PUBLIC_INVENTORY_SERVICE_URL ?? "http://127.0.0.1:5001";
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -95,10 +96,14 @@ export default function RecipePage() {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(
-          `http://127.0.0.1:5001/inventory/?user_id=${encodeURIComponent(userId)}`,
-          { cache: "no-store" }
-        );
+        const token = localStorage.getItem("access_token");
+        const endpoint = token
+          ? `${baseUrl}/inventory/`
+          : `${baseUrl}/inventory/?user_id=${encodeURIComponent(userId)}`;
+        const res = await fetch(endpoint, {
+          cache: "no-store",
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        });
         if (!res.ok) {
           const detail = await res.text();
           throw new Error(detail || "Failed to fetch inventory");

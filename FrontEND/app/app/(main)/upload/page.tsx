@@ -16,10 +16,9 @@ interface IngredientAI {
 
 type UploadMode = "receipt" | "fridge";
 
-const IMAGE_PROCESSING_BASE_URL =
-    process.env.NEXT_PUBLIC_IMAGE_PROCESSING_SERVICE_URL ?? "http://localhost:5003";
 const INVENTORY_BASE_URL =
     process.env.NEXT_PUBLIC_INVENTORY_SERVICE_URL ?? "http://localhost:5001";
+const DEV_USER_ID = "user123";
 
 export default function UploadPage() {
   const [mode, setMode] = useState<UploadMode>("fridge");
@@ -81,16 +80,18 @@ export default function UploadPage() {
     setAnalyzing(true);
     try {
       const formData = new FormData();
-      formData.append("file", selectedFile);
-      const endpoint = `${IMAGE_PROCESSING_BASE_URL}/analyze/${mode}`;
+      formData.append("image", selectedFile);
+      const endpoint = `${INVENTORY_BASE_URL}/inventory/detect?mode=${encodeURIComponent(mode)}`;
       const response = await fetch(endpoint, { method: "POST", body: formData });
       const data = await response.json();
       if (!response.ok) {
         const detail = typeof data?.detail === "string" ? data.detail : "Analysis failed.";
         throw new Error(detail);
       }
-      const rawItems: unknown[] = Array.isArray(data?.items) ? data.items : [];
-      const names = rawItems.filter((value: unknown): value is string => typeof value === "string");
+      const rawItems: unknown[] = Array.isArray(data) ? data : [];
+      const names = rawItems
+        .map((value: any) => (typeof value?.name === "string" ? value.name : null))
+        .filter((value: string | null): value is string => Boolean(value));
       const mapped: IngredientAI[] = names.map((name: string, index: number) => ({
         id: index + 1,
         name,
@@ -139,18 +140,19 @@ export default function UploadPage() {
     setAddingToInventory(true);
     try {
       const token = localStorage.getItem("access_token");
-      if (!token) {
-        setAnalyzeError("Please log in before adding ingredients to inventory.");
-        return;
-      }
       const payload = selectedIngredients.map((item) => ({
         name: item.name.trim(),
         quantity: Number.isFinite(item.quantity) ? item.quantity : 1,
         unit: item.unit.trim() || null,
       }));
-      const response = await fetch(`${INVENTORY_BASE_URL}/inventory/ai`, {
+      const endpoint = token
+        ? `${INVENTORY_BASE_URL}/inventory/ai`
+        : `${INVENTORY_BASE_URL}/inventory/ai?user_id=${encodeURIComponent(DEV_USER_ID)}`;
+      const response = await fetch(endpoint, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: token
+          ? { "Content-Type": "application/json", Authorization: `Bearer ${token}` }
+          : { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
       if (response.status === 401) {
