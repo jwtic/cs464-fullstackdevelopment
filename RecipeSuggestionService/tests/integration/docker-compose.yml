@@ -16,7 +16,7 @@ services:
 
   inventory_service:
     build:
-      context: ../../InventoryService
+      context: ../../../InventoryService
       dockerfile: Dockerfile
     container_name: inventory-service-test
     depends_on:
