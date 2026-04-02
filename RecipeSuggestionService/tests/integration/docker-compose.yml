@@ -1,0 +1,45 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:15
+    container_name: recipe-db-test
+    environment:
+      POSTGRES_USER: inventory
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: inventorydb_test
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U inventory -d inventorydb_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  inventory_service:
+    build:
+      context: ../../InventoryService
+      dockerfile: Dockerfile
+    container_name: inventory-service-test
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg2://inventory:password@db:5432/inventorydb_test
+    ports:
+      - "5001:5001"
+    command: >
+      sh -c "sleep 5 && uvicorn app.main:app --host 0.0.0.0 --port 5001"
+
+  recipe_service:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    container_name: recipe-service-test
+    depends_on:
+      - inventory_service
+    environment:
+      INVENTORY_SERVICE_URL: http://inventory_service:5001
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-placeholder}
+    ports:
+      - "5002:5002"
+    command: >
+      sh -c "sleep 10 && uvicorn app.main:app --host 0.0.0.0 --port 5002"

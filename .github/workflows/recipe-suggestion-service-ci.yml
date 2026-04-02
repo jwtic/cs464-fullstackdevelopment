@@ -12,12 +12,12 @@ on:
   workflow_dispatch:
 
 jobs:
-  unit-tests:
+  integration-tests:
     runs-on: ubuntu-latest
 
     defaults:
       run:
-        working-directory: ./RecipeSuggestionService
+        working-directory: ./RecipeSuggestionService/tests/integration
 
     steps:
       - uses: actions/checkout@v4
@@ -27,10 +27,40 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install dependencies
+      - name: Install test dependencies
         run: |
           pip install -r requirements.txt
 
-      - name: Run unit tests
+      - name: Start services with Docker Compose
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
-          python -m pytest tests/ -v --asyncio-mode=auto
+          docker compose up -d --build
+
+      - name: Wait for services to be ready
+        run: |
+          echo "Waiting for recipe service to be healthy..."
+          timeout=90
+          elapsed=0
+          while [ $elapsed -lt $timeout ]; do
+            if curl -s "http://localhost:5002/openapi.json" > /dev/null; then
+              echo "Service is up!"
+              exit 0
+            fi
+            sleep 5
+            elapsed=$((elapsed+5))
+            echo "Still waiting... ($elapsed seconds)"
+          done
+          echo "Service failed to start in time"
+          docker compose logs
+          exit 1
+
+      - name: Run integration tests
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          python -m pytest -v test_flow.py
+
+      - name: Stop containers
+        if: always()
+        run: docker compose down -v
