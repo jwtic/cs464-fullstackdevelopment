@@ -9,6 +9,7 @@ on:
     branches: [ main ]
     paths:
       - 'RecipeSuggestionService/**'
+  workflow_dispatch:
 
 jobs:
   unit-tests:
