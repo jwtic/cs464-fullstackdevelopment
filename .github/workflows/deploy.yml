@@ -1,0 +1,86 @@
+name: Deploy to EC2
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check-ci-status:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Inventory Service CI
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const runs = await github.rest.actions.listWorkflowRuns({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'inventory-service-ci.yml',
+              branch: 'main',
+              per_page: 1
+            });
+            const latest = runs.data.workflow_runs[0];
+            if (!latest || latest.conclusion !== 'success') {
+              core.setFailed(`Inventory Service CI did not pass. Status: ${latest?.conclusion ?? 'no runs found'}`);
+            }
+
+      - name: Check Recipe Suggestion Service CI
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const runs = await github.rest.actions.listWorkflowRuns({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'recipe-suggestion-service-ci.yml',
+              branch: 'main',
+              per_page: 1
+            });
+            const latest = runs.data.workflow_runs[0];
+            if (!latest || latest.conclusion !== 'success') {
+              core.setFailed(`Recipe Suggestion Service CI did not pass. Status: ${latest?.conclusion ?? 'no runs found'}`);
+            }
+
+      - name: Check Image Processing Service CI
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const runs = await github.rest.actions.listWorkflowRuns({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'image-processing-service-ci.yml',
+              branch: 'main',
+              per_page: 1
+            });
+            const latest = runs.data.workflow_runs[0];
+            if (!latest || latest.conclusion !== 'success') {
+              core.setFailed(`Image Processing Service CI did not pass. Status: ${latest?.conclusion ?? 'no runs found'}`);
+            }
+
+      - name: Check User Service CI
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const runs = await github.rest.actions.listWorkflowRuns({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'user-service-ci.yml',
+              branch: 'main',
+              per_page: 1
+            });
+            const latest = runs.data.workflow_runs[0];
+            if (!latest || latest.conclusion !== 'success') {
+              core.setFailed(`User Service CI did not pass. Status: ${latest?.conclusion ?? 'no runs found'}`);
+            }
+
+  deploy:
+    needs: check-ci-status
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Deploy to EC2
+        run: |
+          echo "${{ secrets.EC2_SSH_KEY }}" > key.pem
+          chmod 600 key.pem
+          ssh -i key.pem -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_HOST }} \
+            "cd /app && git pull && docker compose up -d --build"
+          rm key.pem
