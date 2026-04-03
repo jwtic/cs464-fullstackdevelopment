@@ -30,7 +30,7 @@ def wait_for_service(url: str, path: str = "/openapi.json", timeout: int = 60) -
 
 @pytest.fixture(scope="session", autouse=True)
 def wait_for_services():
-    assert wait_for_service(INVENTORY_URL, "/inventory/", timeout=60), \
+    assert wait_for_service(INVENTORY_URL, "/openapi.json", timeout=60), \
         f"Inventory service not available at {INVENTORY_URL}"
     assert wait_for_service(BASE_URL, "/openapi.json", timeout=60), \
         f"Recipe service not available at {BASE_URL}"

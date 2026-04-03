@@ -39,19 +39,37 @@ jobs:
 
       - name: Wait for services to be ready
         run: |
+          echo "Waiting for inventory service to be healthy..."
+          timeout=90
+          elapsed=0
+          while [ $elapsed -lt $timeout ]; do
+            if curl -s "http://localhost:5001/openapi.json" > /dev/null; then
+              echo "Inventory service is up!"
+              break
+            fi
+            sleep 5
+            elapsed=$((elapsed+5))
+            echo "Still waiting for inventory... ($elapsed seconds)"
+          done
+          if [ $elapsed -ge $timeout ]; then
+            echo "Inventory service failed to start"
+            docker compose logs
+            exit 1
+          fi
+
           echo "Waiting for recipe service to be healthy..."
           timeout=90
           elapsed=0
           while [ $elapsed -lt $timeout ]; do
             if curl -s "http://localhost:5002/openapi.json" > /dev/null; then
-              echo "Service is up!"
+              echo "Recipe service is up!"
               exit 0
             fi
             sleep 5
             elapsed=$((elapsed+5))
-            echo "Still waiting... ($elapsed seconds)"
+            echo "Still waiting for recipe... ($elapsed seconds)"
           done
-          echo "Service failed to start in time"
+          echo "Recipe service failed to start in time"
           docker compose logs
           exit 1
 
