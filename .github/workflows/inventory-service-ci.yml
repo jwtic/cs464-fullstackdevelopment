@@ -1,0 +1,62 @@
+name: Inventory Service CI
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'InventoryService/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'InventoryService/**'
+  workflow_dispatch:
+
+jobs:
+  integration-tests:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ./InventoryService/tests/integration
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install test dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Start services with Docker Compose
+        run: |
+          docker compose up -d --build
+
+      - name: Wait for services to be ready
+        run: |
+          echo "Waiting for inventory service to be healthy..."
+          timeout=60
+          elapsed=0
+          while [ $elapsed -lt $timeout ]; do
+            if curl -s "http://localhost:5001/inventory/?user_id=healthcheck" > /dev/null; then
+              echo "Service is up!"
+              exit 0
+            fi
+            sleep 5
+            elapsed=$((elapsed+5))
+            echo "Still waiting... ($elapsed seconds)"
+          done
+          echo "Service failed to start in time"
+          docker compose logs
+          exit 1
+
+      - name: Run integration tests
+        run: |
+          python -m pytest -v test_flow.py
+
+      - name: Stop containers
+        if: always()
+        run: docker compose down -v

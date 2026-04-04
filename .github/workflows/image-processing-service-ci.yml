@@ -1,0 +1,68 @@
+name: Image Processing Service CI
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'ImageProcessingService/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'ImageProcessingService/**'
+  workflow_dispatch:
+
+jobs:
+  integration-tests:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ./ImageProcessingService/tests/integration
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install test dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Start services with Docker Compose
+        env:
+          AZURE_SUBSCRIPTION_KEY: ${{ secrets.AZURE_SUBSCRIPTION_KEY }}
+          AZURE_ENDPOINT: ${{ secrets.AZURE_ENDPOINT }}
+        run: |
+          docker compose up -d --build
+
+      - name: Wait for services to be ready
+        run: |
+          echo "Waiting for image processing service to be healthy..."
+          timeout=60
+          elapsed=0
+          while [ $elapsed -lt $timeout ]; do
+            if curl -s "http://localhost:5003/health" > /dev/null; then
+              echo "Service is up!"
+              exit 0
+            fi
+            sleep 5
+            elapsed=$((elapsed+5))
+            echo "Still waiting... ($elapsed seconds)"
+          done
+          echo "Service failed to start in time"
+          docker compose logs
+          exit 1
+
+      - name: Run integration tests
+        env:
+          AZURE_SUBSCRIPTION_KEY: ${{ secrets.AZURE_SUBSCRIPTION_KEY }}
+          AZURE_ENDPOINT: ${{ secrets.AZURE_ENDPOINT }}
+        run: |
+          python -m pytest -v test_flow.py
+
+      - name: Stop containers
+        if: always()
+        run: docker compose down -v

@@ -4,8 +4,8 @@ import httpx
 from pathlib import Path
 from dotenv import load_dotenv
 
-ENV_PATH = Path(__file__).resolve().parents[2] / ".env"
-load_dotenv(dotenv_path=ENV_PATH, override=True)
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 PROMPT_TEMPLATE = """
 You are a recipe recommendation assistant.
@@ -49,14 +49,26 @@ Return ONLY valid JSON in this format:
 }
 """
 
-def get_api_key():
-    key = os.getenv("OPENROUTER_API_KEY")
-    if not key:
-        raise RuntimeError("Missing OPENROUTER_API_KEY in .env")
-    return key
+async def generate_recipe_suggestions(ingredients: list[str]):
+    if OPENROUTER_API_KEY:
+        api_key = OPENROUTER_API_KEY
+        api_url = "https://openrouter.ai/api/v1/chat/completions"
+        model = os.getenv("OPENROUTER_MODEL", "openai/gpt-4o-mini")
+    elif OPENAI_API_KEY:
+        api_key = OPENAI_API_KEY
+        api_url = "https://api.openai.com/v1/chat/completions"
+        model = "gpt-4o-mini"
+    else:
+        raise ValueError("Neither OPENROUTER_API_KEY nor OPENAI_API_KEY is configured on the server.")
 
-async def call_openrouter_api(prompt: str) -> str:
-    api_key = get_api_key()
+    ingredient_text = "\n".join(f"- {item}" for item in ingredients)
+
+    prompt = f"""
+User ingredients:
+{ingredient_text}
+
+{PROMPT_TEMPLATE}
+"""
 
     headers = {
         "Authorization": f"Bearer {api_key}",
@@ -66,8 +78,12 @@ async def call_openrouter_api(prompt: str) -> str:
         "X-Title": "RecipeSuggestionService",
     }
 
+    if api_url.startswith("https://openrouter.ai"):
+        headers["HTTP-Referer"] = os.getenv("OPENROUTER_HTTP_REFERER", "http://localhost:3000")
+        headers["X-Title"] = os.getenv("OPENROUTER_APP_NAME", "Smart Pantry")
+
     payload = {
-        "model": "openrouter/free",
+        "model": model,
         "messages": [
             {"role": "system", "content": "You are a helpful cooking assistant."},
             {"role": "user", "content": prompt},
@@ -76,22 +92,7 @@ async def call_openrouter_api(prompt: str) -> str:
     }
 
     async with httpx.AsyncClient(timeout=60.0) as client:
-        response = await client.post(
-            "https://openrouter.ai/api/v1/chat/completions",
-            headers=headers,
-            json=payload,
-        )
-
-        if response.status_code >= 400:
-            print("Status:", response.status_code)
-            print("Body:", response.text)
-
-        if response.status_code == 401:
-            raise RuntimeError("Invalid OpenRouter API key.")
-
-        if response.status_code == 429:
-            raise RuntimeError("OpenRouter free-tier rate limit reached. Try again later.")
-
+        response = await client.post(api_url, headers=headers, json=payload)
         response.raise_for_status()
         data = response.json()
 

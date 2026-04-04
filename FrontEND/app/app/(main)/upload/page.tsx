@@ -7,191 +7,169 @@ import React from "react";
 
 
 interface IngredientAI {
-    id: number;
+  id: number;
   name: string;
   quantity: number;
   unit: string;
-    selected: boolean;
+  selected: boolean;
 }
 
 type UploadMode = "receipt" | "fridge";
 
-const IMAGE_PROCESSING_BASE_URL =
-    process.env.NEXT_PUBLIC_IMAGE_PROCESSING_SERVICE_URL ?? "http://localhost:5003";
 const INVENTORY_BASE_URL =
     process.env.NEXT_PUBLIC_INVENTORY_SERVICE_URL ?? "http://localhost:5001";
+const DEV_USER_ID = "user123";
 
 export default function UploadPage() {
-    const [mode, setMode] = useState<UploadMode>("fridge");
-    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [mode, setMode] = useState<UploadMode>("fridge");
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [ingredients, setIngredients] = useState<IngredientAI[]>([]);
   const [showIngredients, setShowIngredients] = useState(false);
   const [addingToInventory, setAddingToInventory] = useState(false);
   const [addedSuccess, setAddedSuccess] = useState(false);
-    const [analyzeError, setAnalyzeError] = useState<string | null>(null);
-    const [nextIngredientId, setNextIngredientId] = useState(1);
+  const [analyzeError, setAnalyzeError] = useState<string | null>(null);
+  const [nextIngredientId, setNextIngredientId] = useState(1);
 
-    useEffect(() => {
-        return () => {
-            if (selectedImage) {
-                URL.revokeObjectURL(selectedImage);
-            }
-        };
-    }, [selectedImage]);
-
-    const resetUpload = () => {
-        if (selectedImage) {
-            URL.revokeObjectURL(selectedImage);
-        }
-
-        setSelectedFile(null);
-        setSelectedImage(null);
-        setIngredients([]);
-        setShowIngredients(false);
-        setAnalyzing(false);
-        setAnalyzeError(null);
-        setAddedSuccess(false);
-        setNextIngredientId(1);
+  useEffect(() => {
+    return () => {
+      if (selectedImage) {
+        URL.revokeObjectURL(selectedImage);
+      }
     };
+  }, [selectedImage]);
+
+  const resetUpload = () => {
+    if (selectedImage) {
+      URL.revokeObjectURL(selectedImage);
+    }
+    setSelectedFile(null);
+    setSelectedImage(null);
+    setIngredients([]);
+    setShowIngredients(false);
+    setAnalyzing(false);
+    setAnalyzeError(null);
+    setAddedSuccess(false);
+    setNextIngredientId(1);
+  };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-     if (e.target.files && e.target.files[0]) {
-                 if (selectedImage) {
-                        URL.revokeObjectURL(selectedImage);
-                 }
-
-                 const file = e.target.files[0];
-                 setSelectedFile(file);
-                 setSelectedImage(URL.createObjectURL(file));
-         setShowIngredients(false);
-         setAddedSuccess(false);
-                 setAnalyzeError(null);
-         setIngredients([]);
-                 setNextIngredientId(1);
-     }
+    if (e.target.files && e.target.files[0]) {
+      if (selectedImage) {
+        URL.revokeObjectURL(selectedImage);
+      }
+      const file = e.target.files[0];
+      setSelectedFile(file);
+      setSelectedImage(URL.createObjectURL(file));
+      setShowIngredients(false);
+      setAddedSuccess(false);
+      setAnalyzeError(null);
+      setIngredients([]);
+      setNextIngredientId(1);
+    }
   };
 
-    const handleAnalyze = async () => {
-            if (!selectedFile) {
-                setAnalyzeError("Please upload an image first.");
-                return;
-            }
-
-            setAnalyzeError(null);
-            setAddedSuccess(false);
-            setAnalyzing(true);
-
-            try {
-                const formData = new FormData();
-                formData.append("file", selectedFile);
-
-                const endpoint = `${IMAGE_PROCESSING_BASE_URL}/analyze/${mode}`;
-                const response = await fetch(endpoint, {
-                    method: "POST",
-                    body: formData,
-                });
-
-                const data = await response.json();
-                if (!response.ok) {
-                    const detail = typeof data?.detail === "string" ? data.detail : "Analysis failed.";
-                    throw new Error(detail);
-                }
-
-                const rawItems: unknown[] = Array.isArray(data?.items) ? data.items : [];
-                const names = rawItems.filter((value: unknown): value is string => typeof value === "string");
-
-                const mapped: IngredientAI[] = names.map((name: string, index: number) => ({
-                    id: index + 1,
-                    name,
-                    quantity: 1,
-                    unit: "pcs",
-                    selected: true,
-                }));
-
-                setIngredients(mapped);
-                setNextIngredientId(mapped.length + 1);
-                setShowIngredients(true);
-            } catch (error) {
-                const message = error instanceof Error ? error.message : "Unable to reach image processing service.";
-                setAnalyzeError(message);
-                setShowIngredients(false);
-            } finally {
-                setAnalyzing(false);
-            }
+  const handleAnalyze = async () => {
+    if (!selectedFile) {
+      setAnalyzeError("Please upload an image first.");
+      return;
+    }
+    setAnalyzeError(null);
+    setAddedSuccess(false);
+    setAnalyzing(true);
+    try {
+      const formData = new FormData();
+      formData.append("image", selectedFile);
+      const endpoint = `${INVENTORY_BASE_URL}/inventory/detect?mode=${encodeURIComponent(mode)}`;
+      const response = await fetch(endpoint, { method: "POST", body: formData });
+      const data = await response.json();
+      if (!response.ok) {
+        const detail = typeof data?.detail === "string" ? data.detail : "Analysis failed.";
+        throw new Error(detail);
+      }
+      const rawItems: unknown[] = Array.isArray(data) ? data : [];
+      const names = rawItems
+        .map((value: any) => (typeof value?.name === "string" ? value.name : null))
+        .filter((value: string | null): value is string => Boolean(value));
+      const mapped: IngredientAI[] = names.map((name: string, index: number) => ({
+        id: index + 1,
+        name,
+        quantity: 1,
+        unit: "pcs",
+        selected: true,
+      }));
+      setIngredients(mapped);
+      setNextIngredientId(mapped.length + 1);
+      setShowIngredients(true);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to reach image processing service.";
+      setAnalyzeError(message);
+      setShowIngredients(false);
+    } finally {
+      setAnalyzing(false);
+    }
   };
 
-    const updateIngredient = (id: number, field: "name" | "quantity" | "unit" | "selected", value: string | number | boolean) => {
-        setIngredients((prev) =>
-            prev.map((ingredient) =>
-                ingredient.id === id ? { ...ingredient, [field]: value } : ingredient
-            )
-        );
-    };
+  const updateIngredient = (
+    id: number,
+    field: "name" | "quantity" | "unit" | "selected",
+    value: string | number | boolean
+  ) => {
+    setIngredients((prev) =>
+      prev.map((ingredient) => (ingredient.id === id ? { ...ingredient, [field]: value } : ingredient))
+    );
+  };
 
-    const addIngredientRow = () => {
-        setIngredients((prev) => [
-            ...prev,
-            {
-                id: nextIngredientId,
-                name: "",
-                quantity: 1,
-                unit: "pcs",
-                selected: true,
-            },
-        ]);
-        setNextIngredientId((prev) => prev + 1);
-    };
+  const addIngredientRow = () => {
+    setIngredients((prev) => [
+      ...prev,
+      { id: nextIngredientId, name: "", quantity: 1, unit: "pcs", selected: true },
+    ]);
+    setNextIngredientId((prev) => prev + 1);
+  };
 
-    const selectedIngredients = ingredients.filter((item) => item.selected && item.name.trim().length > 0);
+  const selectedIngredients = ingredients.filter((item) => item.selected && item.name.trim().length > 0);
 
   const handleAddToInventory = async () => {
-                if (selectedIngredients.length === 0) {
-                        setAnalyzeError("Select at least one ingredient before adding to inventory.");
-                        return;
-                }
-
-                setAnalyzeError(null);
-        setAddingToInventory(true);
-        try {
-            const token = localStorage.getItem("access_token");
-            if (!token) {
-                setAnalyzeError("Please log in before adding ingredients to inventory.");
-                return;
-            }
-
-            const payload = selectedIngredients.map((item) => ({
-                name: item.name.trim(),
-                quantity: Number.isFinite(item.quantity) ? item.quantity : 1,
-                unit: item.unit.trim() || null,
-            }));
-
-            const response = await fetch(`${INVENTORY_BASE_URL}/inventory/ai`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify(payload),
-            });
-
-            if (response.status === 401) {
-                setAnalyzeError("Session expired. Please log in again.");
-                return;
-            }
-
-            if (!response.ok) {
-                setAnalyzeError("Failed to add ingredients to inventory.");
-                return;
-            }
-
-            setAddedSuccess(true);
-        } catch {
-            setAnalyzeError("Unable to reach the inventory service.");
-        } finally {
-            setAddingToInventory(false);
-        }
+    if (selectedIngredients.length === 0) {
+      setAnalyzeError("Select at least one ingredient before adding to inventory.");
+      return;
+    }
+    setAnalyzeError(null);
+    setAddingToInventory(true);
+    try {
+      const token = localStorage.getItem("access_token");
+      const payload = selectedIngredients.map((item) => ({
+        name: item.name.trim(),
+        quantity: Number.isFinite(item.quantity) ? item.quantity : 1,
+        unit: item.unit.trim() || null,
+      }));
+      const endpoint = token
+        ? `${INVENTORY_BASE_URL}/inventory/ai`
+        : `${INVENTORY_BASE_URL}/inventory/ai?user_id=${encodeURIComponent(DEV_USER_ID)}`;
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: token
+          ? { "Content-Type": "application/json", Authorization: `Bearer ${token}` }
+          : { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (response.status === 401) {
+        setAnalyzeError("Session expired. Please log in again.");
+        return;
+      }
+      if (!response.ok) {
+        setAnalyzeError("Failed to add ingredients to inventory.");
+        return;
+      }
+      setAddedSuccess(false);
+      setAddedSuccess(true);
+    } catch {
+      setAnalyzeError("Unable to reach the inventory service.");
+    } finally {
+      setAddingToInventory(false);
+    }
   };
 
   return (
@@ -254,8 +232,8 @@ export default function UploadPage() {
                                 className="rounded-lg shadow-lg"
                              />
                           </div>
-                          <div className="flex gap-4">
-                                      <button className="btn btn-outline btn-error" onClick={resetUpload}>
+                         <div className="flex gap-4">
+                            <button className="btn btn-outline btn-error" onClick={resetUpload}>
                                 <span className="icon-[tabler--trash] size-5"></span>
                                           Reset
                              </button>
