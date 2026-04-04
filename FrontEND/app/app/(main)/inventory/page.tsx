@@ -7,17 +7,23 @@ interface Ingredient {
   id: string;
   name: string;
   quantity: number;
-  unit: string;
+  unit: string | null;
 }
 
 const BASE_URL = process.env.NEXT_PUBLIC_INVENTORY_SERVICE_URL ?? "http://localhost:5001";
+const DEV_USER_ID = "user123";
 
 function getAuthHeaders(): HeadersInit {
   const token = localStorage.getItem("access_token");
-  return {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${token}`,
-  };
+  if (!token) return { "Content-Type": "application/json" };
+  return { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
+}
+
+function withUserIdFallback(path: string): string {
+  const token = localStorage.getItem("access_token");
+  if (token) return path;
+  const sep = path.includes("?") ? "&" : "?";
+  return `${path}${sep}user_id=${encodeURIComponent(DEV_USER_ID)}`;
 }
 
 export default function InventoryPage() {
@@ -32,7 +38,7 @@ export default function InventoryPage() {
   const [newUnit, setNewUnit] = useState("pcs");
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState("");
-
+  
   useEffect(() => {
     fetchInventory();
   }, []);
@@ -41,7 +47,7 @@ export default function InventoryPage() {
     setLoading(true);
     setError("");
     try {
-      const response = await fetch(`${BASE_URL}/inventory/`, {
+      const response = await fetch(withUserIdFallback(`${BASE_URL}/inventory/`), {
         headers: getAuthHeaders(),
       });
       if (response.status === 401) {
@@ -63,7 +69,7 @@ export default function InventoryPage() {
 
   const handleDelete = async (id: string) => {
     try {
-      const response = await fetch(`${BASE_URL}/inventory/${id}`, {
+      const response = await fetch(withUserIdFallback(`${BASE_URL}/inventory/${id}`), {
         method: "DELETE",
         headers: getAuthHeaders(),
       });
@@ -92,7 +98,7 @@ export default function InventoryPage() {
     setAdding(true);
     setAddError("");
     try {
-      const response = await fetch(`${BASE_URL}/inventory/`, {
+      const response = await fetch(withUserIdFallback(`${BASE_URL}/inventory/`), {
         method: "POST",
         headers: getAuthHeaders(),
         body: JSON.stringify({ name: newName.trim(), quantity: newQuantity, unit: newUnit || null }),
@@ -159,7 +165,7 @@ export default function InventoryPage() {
                   <div className="card-body flex-row items-center justify-between p-6">
                     <div>
                       <h3 className="text-xl font-bold">{item.name}</h3>
-                      <p className="text-base-content/70">{item.quantity} {item.unit}</p>
+                      <p className="text-base-content/70">{item.quantity} {item.unit ?? ""}</p>
                     </div>
                     <button
                       className="btn btn-error btn-outline btn-sm"

@@ -5,7 +5,8 @@ uvicorn[standard]==0.30.1
 # --- Database & ORM ---
 SQLAlchemy==2.0.31
 alembic==1.13.2
-psycopg2-binary==2.9.9   # Postgres driver
+# Postgres driver (optional; local dev can run on SQLite).
+psycopg2-binary==2.9.9; python_version < "3.13"
 # For SQLite in local testing, no extra package needed.
 
 # --- Authentication & Security ---

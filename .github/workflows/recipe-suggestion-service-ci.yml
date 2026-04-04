@@ -1,0 +1,84 @@
+name: Recipe Suggestion Service CI
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'RecipeSuggestionService/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'RecipeSuggestionService/**'
+  workflow_dispatch:
+
+jobs:
+  integration-tests:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ./RecipeSuggestionService/tests/integration
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install test dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Start services with Docker Compose
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          docker compose up -d --build
+
+      - name: Wait for services to be ready
+        run: |
+          echo "Waiting for inventory service to be healthy..."
+          timeout=90
+          elapsed=0
+          while [ $elapsed -lt $timeout ]; do
+            if curl -s "http://localhost:5001/openapi.json" > /dev/null; then
+              echo "Inventory service is up!"
+              break
+            fi
+            sleep 5
+            elapsed=$((elapsed+5))
+            echo "Still waiting for inventory... ($elapsed seconds)"
+          done
+          if [ $elapsed -ge $timeout ]; then
+            echo "Inventory service failed to start"
+            docker compose logs
+            exit 1
+          fi
+
+          echo "Waiting for recipe service to be healthy..."
+          timeout=90
+          elapsed=0
+          while [ $elapsed -lt $timeout ]; do
+            if curl -s "http://localhost:5002/openapi.json" > /dev/null; then
+              echo "Recipe service is up!"
+              exit 0
+            fi
+            sleep 5
+            elapsed=$((elapsed+5))
+            echo "Still waiting for recipe... ($elapsed seconds)"
+          done
+          echo "Recipe service failed to start in time"
+          docker compose logs
+          exit 1
+
+      - name: Run integration tests
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          python -m pytest -v test_flow.py
+
+      - name: Stop containers
+        if: always()
+        run: docker compose down -v

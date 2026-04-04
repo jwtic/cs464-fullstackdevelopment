@@ -4,6 +4,24 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+const USER_SERVICE_CANDIDATES = [
+  process.env.NEXT_PUBLIC_USER_SERVICE_URL,
+  "http://127.0.0.1:8080",
+  "http://localhost:5000",
+].filter(Boolean) as string[];
+
+async function fetchUserService(path: string, init: RequestInit): Promise<Response> {
+  let lastError: unknown;
+  for (const baseUrl of USER_SERVICE_CANDIDATES) {
+    try {
+      return await fetch(`${baseUrl}${path}`, init);
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError ?? new Error("No user service endpoint configured");
+}
+
 export default function RegisterPage() {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -36,8 +54,7 @@ export default function RegisterPage() {
 
     try {
       setIsSubmitting(true);
-      const baseUrl = process.env.NEXT_PUBLIC_USER_SERVICE_URL ?? "http://localhost:5005";
-      const response = await fetch(`${baseUrl}/auth/register`, {
+      const response = await fetchUserService("/auth/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
