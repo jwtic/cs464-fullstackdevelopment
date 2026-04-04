@@ -126,25 +126,25 @@ services:
       - app-network
 
   # ─────────────────────────────────────────
-  # Frontend (Next.js) — add a Dockerfile to FrontEND/ to enable this
+  # Frontend (Next.js)  →  port 3000
   # ─────────────────────────────────────────
-  # frontend:
-  #   build: ./FrontEND/app
-  #   container_name: frontend
-  #   depends_on:
-  #     - user_service
-  #     - inventory_service
-  #     - recipe_service
-  #     - image_processing_service
-  #   environment:
-  #     NEXT_PUBLIC_USER_SERVICE_URL: http://localhost:5000
-  #     NEXT_PUBLIC_INVENTORY_SERVICE_URL: http://localhost:5001
-  #     NEXT_PUBLIC_RECIPE_SERVICE_URL: http://localhost:5002
-  #     NEXT_PUBLIC_IMAGE_PROCESSING_SERVICE_URL: http://localhost:5003
-  #   ports:
-  #     - "3000:3000"
-  #   networks:
-  #     - app-network
+  frontend:
+    build: ./FrontEND/app
+    container_name: frontend
+    depends_on:
+      - user_service
+      - inventory_service
+      - recipe_service
+      - image_processing_service
+    environment:
+      NEXT_PUBLIC_USER_SERVICE_URL: http://localhost:5000
+      NEXT_PUBLIC_INVENTORY_SERVICE_URL: http://localhost:5001
+      NEXT_PUBLIC_RECIPE_SERVICE_URL: http://localhost:5002
+      NEXT_PUBLIC_IMAGE_PROCESSING_SERVICE_URL: http://localhost:5003
+    ports:
+      - "3000:3000"
+    networks:
+      - app-network
 
 networks:
   app-network:
