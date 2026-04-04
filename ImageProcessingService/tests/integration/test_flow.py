@@ -17,6 +17,7 @@ HAS_AZURE_KEY = (
     bool(os.getenv("AZURE_SUBSCRIPTION_KEY", "").strip())
     and os.getenv("AZURE_SUBSCRIPTION_KEY") != "placeholder"
 )
+HAS_GEMINI_KEY = bool(os.getenv("GEMINI_API_KEY", "").strip()) and os.getenv("GEMINI_API_KEY") != "placeholder"
 
 
 def wait_for_service(url: str, path: str = "/health", timeout: int = 60) -> bool:
@@ -69,7 +70,7 @@ def test_analyze_fridge_rejects_non_image():
     assert response.json()["detail"] == "Uploaded file must be an image."
 
 
-@pytest.mark.skipif(not HAS_AZURE_KEY, reason="AZURE_SUBSCRIPTION_KEY not set — skipping live Azure test")
+@pytest.mark.skipif(not HAS_GEMINI_KEY, reason="GEMINI_API_KEY not set — skipping live Gemini test")
 def test_analyze_receipt_with_real_image():
     response = requests.post(
         f"{BASE_URL}/analyze/receipt",

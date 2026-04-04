@@ -1,6 +1,8 @@
 import os
 import json
 import httpx
+from pathlib import Path
+from dotenv import load_dotenv
 
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
@@ -33,18 +35,18 @@ Rules:
 - Do NOT include markdown or explanations.
 
 Return ONLY valid JSON in this format:
-{{
+{
   "recipes": [
-    {{
+    {
       "name": "string",
       "ingredients_used": ["string"],
       "missing_ingredients": ["string"],
       "steps": ["string"],
       "estimated_time": "string",
       "difficulty": "easy|medium|hard"
-    }}
+    }
   ]
-}}
+}
 """
 
 async def generate_recipe_suggestions(ingredients: list[str]):
@@ -71,6 +73,9 @@ User ingredients:
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
+        # Optional but recommended by OpenRouter:
+        "HTTP-Referer": "http://localhost",
+        "X-Title": "RecipeSuggestionService",
     }
 
     if api_url.startswith("https://openrouter.ai"):
@@ -91,5 +96,26 @@ User ingredients:
         response.raise_for_status()
         data = response.json()
 
-    content = data["choices"][0]["message"]["content"]
-    return json.loads(content)
+    return data["choices"][0]["message"]["content"]
+
+async def generate_recipe_suggestions(ingredients: list[str]):
+    if not get_api_key():
+        raise ValueError("OPENROUTER_API_KEY is not configured on the server.")
+
+    ingredient_text = "\n".join(f"- {item}" for item in ingredients)
+
+    prompt = f"""
+User ingredients:
+{ingredient_text}
+
+{PROMPT_TEMPLATE}
+"""
+
+    content = await call_openrouter_api(prompt)
+
+    try:
+        return json.loads(content)
+    except json.JSONDecodeError as e:
+        print("Raw model output:")
+        print(content)
+        raise RuntimeError("Model returned invalid JSON.") from e

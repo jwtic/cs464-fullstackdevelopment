@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import React from "react";
 
@@ -18,7 +17,25 @@ type UploadMode = "receipt" | "fridge";
 
 const INVENTORY_BASE_URL =
     process.env.NEXT_PUBLIC_INVENTORY_SERVICE_URL ?? "http://localhost:5001";
+/** Docker Compose maps the image service to host port 5003; `python main.py` uses 8000. */
+const IMAGE_SERVICE_URL =
+    process.env.NEXT_PUBLIC_IMAGE_PROCESSING_SERVICE_URL ?? "http://localhost:5003";
 const DEV_USER_ID = "user123";
+
+function analyzeFetchError(error: unknown): string {
+  if (error instanceof Error) {
+    const m = error.message;
+    if (
+      m === "Failed to fetch" ||
+      m === "Load failed" ||
+      m === "NetworkError when attempting to fetch resource."
+    ) {
+      return `Cannot reach the image service at ${IMAGE_SERVICE_URL}. Start it (docker: port 5003, or local: port 8000) and set NEXT_PUBLIC_IMAGE_PROCESSING_SERVICE_URL if needed.`;
+    }
+    return m;
+  }
+  return "Unable to reach the image processing service.";
+}
 
 export default function UploadPage() {
   const [mode, setMode] = useState<UploadMode>("fridge");
@@ -78,33 +95,59 @@ export default function UploadPage() {
     setAnalyzeError(null);
     setAddedSuccess(false);
     setAnalyzing(true);
+  
     try {
       const formData = new FormData();
-      formData.append("image", selectedFile);
-      const endpoint = `${INVENTORY_BASE_URL}/inventory/detect?mode=${encodeURIComponent(mode)}`;
-      const response = await fetch(endpoint, { method: "POST", body: formData });
-      const data = await response.json();
-      if (!response.ok) {
-        const detail = typeof data?.detail === "string" ? data.detail : "Analysis failed.";
-        throw new Error(detail);
+      // 1. MUST use "file" to match our Python backend @app.post parameter
+      formData.append("file", selectedFile);
+  
+      const endpoint =
+        mode === "receipt"
+          ? `${IMAGE_SERVICE_URL}/analyze/receipt`
+          : `${IMAGE_SERVICE_URL}/analyze/fridge`;
+
+      const response = await fetch(endpoint, {
+        method: "POST",
+        body: formData,
+      });
+
+      let data: { items?: unknown; detail?: unknown } = {};
+      const ct = response.headers.get("content-type") ?? "";
+      if (ct.includes("application/json")) {
+        try {
+          data = (await response.json()) as typeof data;
+        } catch {
+          throw new Error("Image service returned invalid JSON.");
+        }
+      } else if (!response.ok) {
+        const text = await response.text();
+        throw new Error(
+          text?.trim() ? text.trim().slice(0, 200) : `Analysis failed (${response.status}).`
+        );
       }
-      const rawItems: unknown[] = Array.isArray(data) ? data : [];
-      const names = rawItems
-        .map((value: any) => (typeof value?.name === "string" ? value.name : null))
-        .filter((value: string | null): value is string => Boolean(value));
-      const mapped: IngredientAI[] = names.map((name: string, index: number) => ({
+
+      if (!response.ok) {
+        const detail = data.detail;
+        throw new Error(typeof detail === "string" ? detail : "Analysis failed.");
+      }
+  
+      // 3. Map the string array ["Milk", "Eggs"] to your UI objects
+      // Our Python service returns { "items": [...] }
+      const rawItems: string[] = Array.isArray(data.items) ? data.items : [];
+      
+      const mapped: IngredientAI[] = rawItems.map((name: string, index: number) => ({
         id: index + 1,
-        name,
+        name: name, // Gemini/Azure already cleaned the name
         quantity: 1,
         unit: "pcs",
         selected: true,
       }));
+  
       setIngredients(mapped);
       setNextIngredientId(mapped.length + 1);
       setShowIngredients(true);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unable to reach image processing service.";
-      setAnalyzeError(message);
+      setAnalyzeError(analyzeFetchError(error));
       setShowIngredients(false);
     } finally {
       setAnalyzing(false);
@@ -224,13 +267,11 @@ export default function UploadPage() {
                    ) : (
                       <div className="relative w-full flex flex-col items-center">
                           <div className="relative w-full max-w-md h-80 mb-6">
-                             <Image 
-                                src={selectedImage} 
-                                alt="Preview" 
-                                fill
-                                style={{ objectFit: "contain" }}
-                                className="rounded-lg shadow-lg"
-                             />
+                            <img
+                              src={selectedImage}
+                              alt="Preview"
+                              className="h-full w-full rounded-lg object-contain shadow-lg"
+                            />
                           </div>
                          <div className="flex gap-4">
                             <button className="btn btn-outline btn-error" onClick={resetUpload}>

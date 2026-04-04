@@ -1,11 +1,14 @@
 import io
-import os
 
 from fastapi.testclient import TestClient
 from PIL import Image
 
-os.environ.setdefault("AZURE_SUBSCRIPTION_KEY", "test-key")
-os.environ.setdefault("AZURE_ENDPOINT", "https://example.cognitiveservices.azure.com/")
+import fridge
+import receipt
+
+receipt.GEMINI_API_KEY = "test-gemini-key"
+fridge.AZURE_SUBSCRIPTION_KEY = "test-key"
+fridge.AZURE_ENDPOINT = "https://example.cognitiveservices.azure.com/"
 
 import main as service_main
 
@@ -24,11 +27,18 @@ def test_health_check() -> None:
     response = client.get("/health")
 
     assert response.status_code == 200
-    assert response.json() == {"status": "ok"}
+    data = response.json()
+    assert data["status"] == "online"
+    assert data["gemini_configured"] is True
+    assert data["azure_configured"] is True
 
 
 def test_analyze_receipt_success(monkeypatch) -> None:
-    monkeypatch.setattr(service_main.ai, "audit_receipt_bytes", lambda _: ["Milk", "Eggs"])
+    class _Fake:
+        def analyze(self, _: bytes):
+            return ["Milk", "Eggs"]
+
+    monkeypatch.setattr(service_main, "get_receipt_analyzer", lambda: _Fake())
 
     response = client.post(
         "/analyze/receipt",
@@ -36,7 +46,7 @@ def test_analyze_receipt_success(monkeypatch) -> None:
     )
 
     assert response.status_code == 200
-    assert response.json() == {"items": ["Milk", "Eggs"]}
+    assert response.json() == {"status": "success", "items": ["Milk", "Eggs"]}
 
 
 def test_analyze_receipt_rejects_non_image() -> None:
@@ -60,10 +70,11 @@ def test_analyze_receipt_rejects_empty_file() -> None:
 
 
 def test_analyze_receipt_returns_500_on_ai_error(monkeypatch) -> None:
-    def _raise(_: bytes):
-        raise RuntimeError("azure failed")
+    class _Fake:
+        def analyze(self, _: bytes):
+            raise RuntimeError("gemini failed")
 
-    monkeypatch.setattr(service_main.ai, "audit_receipt_bytes", _raise)
+    monkeypatch.setattr(service_main, "get_receipt_analyzer", lambda: _Fake())
 
     response = client.post(
         "/analyze/receipt",
@@ -75,7 +86,11 @@ def test_analyze_receipt_returns_500_on_ai_error(monkeypatch) -> None:
 
 
 def test_analyze_fridge_success(monkeypatch) -> None:
-    monkeypatch.setattr(service_main.ai, "scan_fridge_bytes", lambda _: ["Tomato", "Milk"])
+    class _Fake:
+        def scan_fridge_bytes(self, _: bytes):
+            return ["Tomato", "Milk"]
+
+    monkeypatch.setattr(service_main, "get_fridge_scanner", lambda: _Fake())
 
     response = client.post(
         "/analyze/fridge",
@@ -83,7 +98,7 @@ def test_analyze_fridge_success(monkeypatch) -> None:
     )
 
     assert response.status_code == 200
-    assert response.json() == {"items": ["Tomato", "Milk"]}
+    assert response.json() == {"status": "success", "items": ["Tomato", "Milk"]}
 
 
 def test_analyze_fridge_rejects_invalid_image() -> None:
@@ -93,4 +108,4 @@ def test_analyze_fridge_rejects_invalid_image() -> None:
     )
 
     assert response.status_code == 400
-    assert response.json()["detail"] == "Could not parse image file."
+    assert response.json()["detail"] == "Invalid or corrupt image format."

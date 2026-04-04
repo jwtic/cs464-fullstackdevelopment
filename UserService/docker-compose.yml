@@ -33,7 +33,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
       POSTGRES_DB: ${POSTGRES_DB:-userdb}
     ports:
-      - "5000:5000"
+      - "5005:5000"
     command: >
       sh -c "
         echo '⏳ Waiting for Postgres...' &&
