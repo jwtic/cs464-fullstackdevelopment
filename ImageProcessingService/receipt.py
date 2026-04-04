@@ -7,9 +7,9 @@ from PIL import Image
 
 # --- DIRECT CONFIG ---
 # Hardcoded API Key for Gemini
-GEMINI_API_KEY = "AIzaSyBLMe-P7nRwopYOZp1sZ00gGqQ9LNzgHsc"
+GEMINI_API_KEY = "AIzaSyBVbVNNqI3wAI2bwfPAF4w-aOEGDG4DhPI"
 
-RECEIPT_PROMPT = """
+RECEIPT_PROMPT = """    
 Extract food and drink items from the receipt.
 
 Return ONLY a comma-separated list.

@@ -25,7 +25,7 @@ services:
       - app-network
 
   # ─────────────────────────────────────────
-  # User Service  →  host port 5005 (container still listens on 5000; 5000 is often AirPlay on macOS)
+  # User Service  →  port 5000
   # ─────────────────────────────────────────
   user_service:
     build: ./UserService
@@ -38,7 +38,7 @@ services:
       CORS_ORIGINS: http://localhost:3000,http://127.0.0.1:3000,http://${EC2_HOST:-}:3000
       JWT_SECRET: ${JWT_SECRET:-supersecret}
     ports:
-      - "5005:5000"
+      - "5000:5000"
     command: >
       sh -c "
         echo 'Waiting for Postgres...' &&
