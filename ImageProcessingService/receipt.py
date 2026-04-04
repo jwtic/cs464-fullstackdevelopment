@@ -1,102 +1,77 @@
 import io
-from typing import List
-
+import os
 import re
+from typing import List
 from google import genai
 from PIL import Image
 
-# --- DIRECT CONFIG ---
-# Hardcoded API Key for Gemini
-GEMINI_API_KEY = "AIzaSyBLMe-P7nRwopYOZp1sZ00gGqQ9LNzgHsc"
-
+# --- PROMPT CONFIG ---
 RECEIPT_PROMPT = """
 Extract food and drink items from the receipt.
-
 Return ONLY a comma-separated list.
+
+Rules:
+- No sentences, explanations, or prefixes.
+- No extra text.
+- Output must start immediately with the first item.
 
 Example output:
 Sweet Tarts, Jasmine Rice
-
-Rules:
-- No sentences
-- No explanations
-- No prefixes
-- No extra text
-- Output must start immediately with the first item
-
-Receipt:
 """
 
 def _parse_comma_list(text: str) -> List[str]:
-    # 🔥 STEP 0: HARD CLEAN LLM PREFIXES
+    """Cleans up the LLM response to ensure only ingredient strings remain."""
     text = text.strip()
 
-    # Remove everything before colon (common pattern)
+    # Remove common AI prefixes (e.g., "Here is the list: ")
     if ":" in text:
         text = text.split(":", 1)[-1].strip()
 
-    # Remove common "chatty" phrases explicitly
-    text = re.sub(
-        r"(?i)(here are.*?:|here is.*?:|the following.*?:|extracted.*?:)",
-        "",
-        text
-    ).strip()
+    text = re.sub(r"(?i)(here are.*?:|here is.*?:|the following.*?:|extracted.*?:)", "", text).strip()
+    text = re.sub(r"(?i)^(here are|here is|the following|these are).*?\n", "", text).strip()
 
-    # Remove leading sentences without colon (fallback)
-    text = re.sub(
-        r"(?i)^(here are|here is|the following|these are).*?\n",
-        "",
-        text
-    ).strip()
-
-    # 1. Split by newlines and commas
     parts = text.replace("\n", ",").split(",")
-
     clean_items = []
     ban_words = ["here", "list", "receipt", "items", "analysis", "following"]
 
     for p in parts:
         item = p.strip()
-        
-        # Skip empty strings
         if not item:
             continue
-            
-        # Skip long "sentence-like" chunks
+        # Skip sentences (ingredients are usually short)
         if len(item.split()) > 5:
             continue
-            
         # Skip chatty leftovers
         if any(word in item.lower() for word in ban_words):
             continue
-            
         clean_items.append(item.title())
 
     return clean_items
 
 class ReceiptGeminiAnalyzer:
     """
-    Specialist class for analyzing grocery receipts using Gemini 2.5 Flash.
-    This class is imported and used by main.py.
+    Specialist class for analyzing grocery receipts using Gemini.
+    Initialized lazily by main.py.
     """
     def __init__(self) -> None:
-        # Initialize the Google GenAI client with your hardcoded key
-        self.client = genai.Client(api_key=GEMINI_API_KEY)
+        # Pull the key from environment variables (loaded via env_loader in main.py)
+        key = os.getenv("GEMINI_API_KEY", "").strip()
+        
+        if not key:
+            raise RuntimeError(
+                "GEMINI_API_KEY is missing! Check your .env file."
+            )
+            
+        self.client = genai.Client(api_key=key)
 
     def analyze(self, image_bytes: bytes) -> List[str]:
-        """
-        The main method called by main.py. 
-        Takes raw image bytes and returns a cleaned list of food items.
-        """
-        # Convert raw bytes into a format PIL (and Gemini) can read
+        """Takes raw image bytes and returns a cleaned list of food items."""
         img = Image.open(io.BytesIO(image_bytes))
         
-        # Using gemini-2.5-flash as the high-performance model
         response = self.client.models.generate_content(
             model="gemini-2.5-flash",
             contents=[RECEIPT_PROMPT, img],
         )
         
-        # Extract the text and convert it to a list
         text = (response.text or "").strip()
         return _parse_comma_list(text)
