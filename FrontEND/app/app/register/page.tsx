@@ -5,10 +5,8 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 const USER_SERVICE_CANDIDATES = [
-  process.env.NEXT_PUBLIC_USER_SERVICE_URL,
-  "http://127.0.0.1:8080",
-  "http://localhost:5000",
-].filter(Boolean) as string[];
+  process.env.NEXT_PUBLIC_USER_SERVICE_URL ?? "http://localhost:5000",
+];
 
 async function fetchUserService(path: string, init: RequestInit): Promise<Response> {
   let lastError: unknown;

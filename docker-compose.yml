@@ -129,7 +129,13 @@ services:
   # Frontend (Next.js)  →  port 3000
   # ─────────────────────────────────────────
   frontend:
-    build: ./FrontEND/app
+    build:
+      context: ./FrontEND/app
+      args:
+        NEXT_PUBLIC_USER_SERVICE_URL: http://${EC2_HOST:-localhost}:5000
+        NEXT_PUBLIC_INVENTORY_SERVICE_URL: http://${EC2_HOST:-localhost}:5001
+        NEXT_PUBLIC_RECIPE_SERVICE_URL: http://${EC2_HOST:-localhost}:5002
+        NEXT_PUBLIC_IMAGE_PROCESSING_SERVICE_URL: http://${EC2_HOST:-localhost}:5003
     container_name: frontend
     depends_on:
       - user_service
