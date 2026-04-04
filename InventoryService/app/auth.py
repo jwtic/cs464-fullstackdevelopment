@@ -7,9 +7,9 @@ from jose import jwt, JWTError
 SECRET_KEY = os.getenv("JWT_SECRET", "supersecret")
 ALGORITHM = "HS256"
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="http://localhost:5000/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="http://localhost:5005/auth/login")
 oauth2_scheme_optional = OAuth2PasswordBearer(
-    tokenUrl="http://localhost:5000/auth/login",
+    tokenUrl="http://localhost:5005/auth/login",
     auto_error=False,
 )
 

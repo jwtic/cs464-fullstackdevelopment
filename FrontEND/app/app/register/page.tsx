@@ -4,10 +4,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+/** Host port 5005 avoids macOS AirPlay Receiver on :5000. */
 const USER_SERVICE_CANDIDATES = [
   process.env.NEXT_PUBLIC_USER_SERVICE_URL,
-  "http://127.0.0.1:8080",
-  "http://localhost:5000",
+  "http://localhost:5005",
+  "http://127.0.0.1:5005",
 ].filter(Boolean) as string[];
 
 async function fetchUserService(path: string, init: RequestInit): Promise<Response> {
@@ -76,8 +77,12 @@ export default function RegisterPage() {
       setTimeout(() => {
         router.push("/");
       }, 900);
-    } catch {
-      setError("Unable to reach the user service. Please try again.");
+    } catch (err) {
+      const hint =
+        err instanceof TypeError
+          ? " Is the User Service running? (http://localhost:5005 with Docker on Mac.)"
+          : "";
+      setError(`Unable to reach the user service.${hint}`);
     } finally {
       setIsSubmitting(false);
     }

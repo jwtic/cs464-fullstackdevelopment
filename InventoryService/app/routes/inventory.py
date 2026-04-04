@@ -1,3 +1,4 @@
+import logging
 import os
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
@@ -8,11 +9,13 @@ from app.models import Ingredient
 from app.schemas import IngredientCreate, IngredientAI
 from app.auth import get_user_id_or_query
 from app.services.smart_pantry_ai import SmartPantryAI
+from app.services.image_processing_client import detect_via_image_service, get_image_processing_service_url
 
 
 router = APIRouter(prefix="/inventory", tags=["inventory"])
+logger = logging.getLogger(__name__)
 
-ALLOW_DETECTION_FALLBACK = os.getenv("ALLOW_DETECTION_FALLBACK", "true").lower() == "true"
+ALLOW_DETECTION_FALLBACK = os.getenv("ALLOW_DETECTION_FALLBACK", "false").lower() == "true"
 
 
 def _fallback_detected_names(mode: str) -> list[str]:
@@ -86,10 +89,11 @@ async def detect_ingredients(
     mode: str = "fridge",
 ):
     """
-    Detect ingredients from an uploaded image using Azure Computer Vision.
-    mode:
-      - fridge: dense captions + whitelist matching
-      - receipt: OCR ("read") + keyword matching
+    Detect ingredients from an uploaded image.
+
+    When IMAGE_PROCESSING_SERVICE_URL is set, requests are forwarded to that service
+    (Gemini for receipts, Azure-based pipeline for fridge). Otherwise uses the
+    in-process SmartPantryAI (Azure) implementation.
     """
     if mode not in {"fridge", "receipt"}:
         raise HTTPException(status_code=400, detail="mode must be 'fridge' or 'receipt'")
@@ -99,13 +103,26 @@ async def detect_ingredients(
         raise HTTPException(status_code=400, detail="Empty image upload")
 
     try:
-        pantry = SmartPantryAI()
-        names = pantry.detect_ingredients(content, mode=mode)  # type: ignore[arg-type]
+        if get_image_processing_service_url():
+            names = await detect_via_image_service(
+                content,
+                mode,
+                image.filename or "upload.jpg",
+                image.content_type,
+            )
+        else:
+            pantry = SmartPantryAI()
+            names = pantry.detect_ingredients(content, mode=mode)  # type: ignore[arg-type]
     except Exception as e:
         if ALLOW_DETECTION_FALLBACK:
+            logger.warning(
+                "Ingredient detection failed; using placeholder fallback: %s",
+                e,
+                exc_info=True,
+            )
             names = _fallback_detected_names(mode)
         else:
-            raise HTTPException(status_code=500, detail=f"Detection failed: {e}")
+            raise HTTPException(status_code=500, detail=f"Detection failed: {e}") from e
 
     # Return IngredientAI objects (quantity/unit can be refined later)
     return [IngredientAI(name=n, quantity=1, unit=None) for n in names]
