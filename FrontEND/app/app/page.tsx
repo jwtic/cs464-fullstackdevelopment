@@ -22,7 +22,7 @@ export default function LoginPage() {
 
     try {
       setIsSubmitting(true);
-      const baseUrl = process.env.NEXT_PUBLIC_USER_SERVICE_URL ?? "http://localhost:5000";
+      const baseUrl = process.env.NEXT_PUBLIC_USER_SERVICE_URL ?? "http://localhost:5005";
       const response = await fetch(`${baseUrl}/auth/login`, {
         method: "POST",
         headers: {

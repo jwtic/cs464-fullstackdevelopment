@@ -40,7 +40,7 @@ services:
       CORS_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
       JWT_SECRET: ${JWT_SECRET:-supersecret}
     ports:
-      - "5000:5000"
+      - "5005:5000"
     command: >
       sh -c "
         echo 'Waiting for Postgres...' &&
