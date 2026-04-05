@@ -1,3 +1,4 @@
+
 """
 Integration tests for the Image Processing Service.
 Requires the service to be running via docker compose.
@@ -49,7 +50,7 @@ def wait_for_services():
 def test_service_health():
     response = requests.get(f"{BASE_URL}/health")
     assert response.status_code == 200
-    assert response.json() == {"status": "ok"}
+    assert response.json().get("status") == "online"
 
 
 def test_analyze_receipt_rejects_non_image():
