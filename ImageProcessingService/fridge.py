@@ -13,14 +13,23 @@ AZURE_ENDPOINT = os.getenv("AZURE_ENDPOINT", "")
 
 class FridgeScannerAI:
     def __init__(self):
-        self.subscription_key = AZURE_SUBSCRIPTION_KEY
-        self.endpoint = AZURE_ENDPOINT.rstrip("/") + "/"
+
+        self.subscription_key = os.getenv("AZURE_SUBSCRIPTION_KEY", "").strip()
+        endpoint = os.getenv("AZURE_ENDPOINT", "").strip()
+        
+        if not self.subscription_key or not endpoint:
+            raise RuntimeError(
+                "Missing Azure Credentials! Ensure AZURE_SUBSCRIPTION_KEY "
+                "and AZURE_ENDPOINT are set in your .env file."
+            )
+
+        self.endpoint = endpoint.rstrip("/") + "/"
         self.analyze_url = f"{self.endpoint}computervision/imageanalysis:analyze"
+        
         self.fridge_whitelist = [
             "tomato", "egg", "banana", "pepper", "grape", "cabbage", "lettuce",
             "cucumber", "milk", "bottle", "juice", "strawberry", "berry", "orange",
         ]
-
 
     def _call_azure(self, image_bytes: bytes, features: str):
         headers = {

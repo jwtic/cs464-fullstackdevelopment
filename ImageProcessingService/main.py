@@ -7,7 +7,6 @@ from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from PIL import Image
 
-# --- IMPORT YOUR SPECIALISTS ---
 from receipt import ReceiptGeminiAnalyzer
 from fridge import FridgeScannerAI
 
@@ -24,8 +23,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Lazy init: do not construct clients at import time — missing env in Docker would crash the worker
-# and the port would accept then reset connections ("Load failed" in the browser).
 _receipt_analyzer: Optional[ReceiptGeminiAnalyzer] = None
 _fridge_scanner: Optional[FridgeScannerAI] = None
 

@@ -1,20 +1,18 @@
 import io
-
+import os
+import pytest
 from fastapi.testclient import TestClient
 from PIL import Image
 
-import fridge
-import receipt
-
-receipt.GEMINI_API_KEY = "test-gemini-key"
-fridge.AZURE_SUBSCRIPTION_KEY = "test-key"
-fridge.AZURE_ENDPOINT = "https://example.cognitiveservices.azure.com/"
+@pytest.fixture(autouse=True)
+def mock_env(monkeypatch):
+    monkeypatch.setenv("AZURE_SUBSCRIPTION_KEY", "test-key")
+    monkeypatch.setenv("AZURE_ENDPOINT", "https://example.azure.com/")
+    monkeypatch.setenv("GEMINI_API_KEY", "test-gemini-key")
 
 import main as service_main
 
-
 client = TestClient(service_main.app)
-
 
 def _make_png_bytes() -> bytes:
     image = Image.new("RGB", (8, 8), color="white")
@@ -22,22 +20,23 @@ def _make_png_bytes() -> bytes:
     image.save(buffer, format="PNG")
     return buffer.getvalue()
 
-
 def test_health_check() -> None:
     response = client.get("/health")
 
     assert response.status_code == 200
     data = response.json()
+    
     assert data["status"] == "online"
+    assert data["message"] == "Smart Pantry AI is ready"
     assert data["gemini_configured"] is True
     assert data["azure_configured"] is True
-
 
 def test_analyze_receipt_success(monkeypatch) -> None:
     class _Fake:
         def analyze(self, _: bytes):
             return ["Milk", "Eggs"]
 
+    # Mock the getter to return our fake analyzer
     monkeypatch.setattr(service_main, "get_receipt_analyzer", lambda: _Fake())
 
     response = client.post(
@@ -48,7 +47,6 @@ def test_analyze_receipt_success(monkeypatch) -> None:
     assert response.status_code == 200
     assert response.json() == {"status": "success", "items": ["Milk", "Eggs"]}
 
-
 def test_analyze_receipt_rejects_non_image() -> None:
     response = client.post(
         "/analyze/receipt",
@@ -58,7 +56,6 @@ def test_analyze_receipt_rejects_non_image() -> None:
     assert response.status_code == 400
     assert response.json()["detail"] == "Uploaded file must be an image."
 
-
 def test_analyze_receipt_rejects_empty_file() -> None:
     response = client.post(
         "/analyze/receipt",
@@ -67,7 +64,6 @@ def test_analyze_receipt_rejects_empty_file() -> None:
 
     assert response.status_code == 400
     assert response.json()["detail"] == "Uploaded file is empty."
-
 
 def test_analyze_receipt_returns_500_on_ai_error(monkeypatch) -> None:
     class _Fake:
@@ -84,7 +80,6 @@ def test_analyze_receipt_returns_500_on_ai_error(monkeypatch) -> None:
     assert response.status_code == 500
     assert "Receipt analysis failed" in response.json()["detail"]
 
-
 def test_analyze_fridge_success(monkeypatch) -> None:
     class _Fake:
         def scan_fridge_bytes(self, _: bytes):
@@ -99,7 +94,6 @@ def test_analyze_fridge_success(monkeypatch) -> None:
 
     assert response.status_code == 200
     assert response.json() == {"status": "success", "items": ["Tomato", "Milk"]}
-
 
 def test_analyze_fridge_rejects_invalid_image() -> None:
     response = client.post(
