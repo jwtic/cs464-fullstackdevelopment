@@ -44,9 +44,8 @@ jobs:
           echo "Waiting for image processing service to be healthy..."
           timeout=60
           elapsed=0
-          # CHANGED PORT FROM 5003 TO 8000 TO MATCH YOUR main.py
           while [ $elapsed -lt $timeout ]; do
-            if curl -s "http://localhost:8000/health" > /dev/null; then
+            if curl -s "http://localhost:5003/health" > /dev/null; then
               echo "Service is up!"
               exit 0
             fi
