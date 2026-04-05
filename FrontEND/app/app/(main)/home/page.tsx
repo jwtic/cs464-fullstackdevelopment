@@ -16,7 +16,7 @@ export default function Home() {
           <div className="gap-18 md:pt-45 lg:gap-35 lg:pt-47.5 flex h-full flex-col justify-between bg-[url('/assets/img/free-layer-blur.png')] bg-cover bg-center bg-no-repeat py-8 pt-40 sm:py-16 md:gap-24 lg:py-24">
             <div className="mx-auto flex max-w-[1280px] flex-col items-center gap-6 justify-self-center px-4 text-center sm:px-6 lg:px-8">
               <div className="bg-base-200 border-base-content/20 w-fit rounded-full border px-3 py-1">
-                <span> Serving Food Lovers Since 2016 ❤️</span>
+                <span> We suggest recipes for you! ❤️</span>
               </div>
               <h1 className="text-base-content z-1 relative text-5xl font-bold leading-[1.15] max-md:text-2xl md:max-w-3xl">
                 <span>
