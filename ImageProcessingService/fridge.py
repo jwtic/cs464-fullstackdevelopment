@@ -31,18 +31,20 @@ class FridgeScannerAI:
             "cucumber", "milk", "bottle", "juice", "strawberry", "berry", "orange",
         ]
 
-    def _call_azure(self, image_bytes: bytes, features: str):
+    def _call_azure(self, image_bytes: bytes, features: str, retries: int = 3):
         headers = {
             "Ocp-Apim-Subscription-Key": self.subscription_key,
             "Content-Type": "application/octet-stream"
         }
         params = {"api-version": "2024-02-01", "features": features}
         
-        response = requests.post(self.analyze_url, headers=headers, params=params, data=image_bytes)
+        response = requests.post(self.analyze_url, headers=headers, params=params, data=image_bytes, timeout=15)
         
         if response.status_code == 429:
+            if retries <= 0:
+                raise Exception("Azure rate limit exceeded. Please try again later.")
             time.sleep(5)
-            return self._call_azure(image_bytes, features)
+            return self._call_azure(image_bytes, features, retries - 1)
         
         if not response.ok:
             raise Exception(f"Azure API Error: {response.status_code} - {response.text}")

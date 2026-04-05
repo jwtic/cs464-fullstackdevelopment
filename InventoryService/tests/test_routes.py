@@ -3,7 +3,7 @@ def test_add_ingredient(test_client):
     res = test_client.post(
         "/inventory?user_id=testuser",
         json={
-            "name": "egg",
+            "name": "Egg",
             "quantity": 4,
             "unit": "pcs"
         }
@@ -14,6 +14,18 @@ def test_add_ingredient(test_client):
     assert data["name"] == "egg"
     assert data["quantity"] == 4
     assert data["unit"] == "pcs"
+
+
+def test_add_ingredient_case_insensitive_upsert(test_client):
+    """Adding 'Tomato' then 'tomato' should accumulate quantity, not create duplicates."""
+    test_client.post("/inventory?user_id=upsertuser", json={"name": "Tomato", "quantity": 2, "unit": "pcs"})
+    test_client.post("/inventory?user_id=upsertuser", json={"name": "tomato", "quantity": 3, "unit": "pcs"})
+
+    res = test_client.get("/inventory?user_id=upsertuser")
+    items = res.json()
+    tomato_items = [i for i in items if i["name"] == "tomato"]
+    assert len(tomato_items) == 1
+    assert tomato_items[0]["quantity"] == 5
 
 def test_get_inventory(test_client):
 
@@ -43,8 +55,8 @@ def test_inventory_per_user(test_client):
 
 def test_add_ai_ingredients(test_client):
     payload = [
-        {"name": "tomato", "quantity": 3, "unit": "pcs"},
-        {"name": "cheese", "quantity": 200, "unit": "grams"}
+        {"name": "Tomato", "quantity": 3, "unit": "pcs"},
+        {"name": "Cheese", "quantity": 200, "unit": "grams"}
     ]
     
     res = test_client.post("/inventory/ai?user_id=aiuser", json=payload)

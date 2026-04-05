@@ -42,17 +42,27 @@ def add_ingredient(
     user_id: str = Depends(get_user_id_or_query),
     db: Session = Depends(get_db)
 ):
+    name = ingredient.name.strip().lower()
+    existing = db.query(Ingredient).filter(
+        Ingredient.user_id == user_id,
+        Ingredient.name == name
+    ).first()
+
+    if existing:
+        existing.quantity += ingredient.quantity
+        db.commit()
+        db.refresh(existing)
+        return existing
+
     item = Ingredient(
         user_id=user_id,
-        name=ingredient.name,
+        name=name,
         quantity=ingredient.quantity,
         unit=ingredient.unit
     )
-
     db.add(item)
     db.commit()
     db.refresh(item)
-
     return item
 
 
@@ -65,15 +75,24 @@ def add_ai_ingredients(
     saved_items = []
 
     for ing in ingredients:
-        item = Ingredient(
-            user_id=user_id,
-            name=ing.name,
-            quantity=ing.quantity,
-            unit=ing.unit
-        )
+        name = ing.name.strip().lower()
+        existing = db.query(Ingredient).filter(
+            Ingredient.user_id == user_id,
+            Ingredient.name == name
+        ).first()
 
-        db.add(item)
-        saved_items.append(item)
+        if existing:
+            existing.quantity += ing.quantity
+            saved_items.append(existing)
+        else:
+            item = Ingredient(
+                user_id=user_id,
+                name=name,
+                quantity=ing.quantity,
+                unit=ing.unit
+            )
+            db.add(item)
+            saved_items.append(item)
 
     db.commit()
 
@@ -141,7 +160,7 @@ def update_ingredient(
     if not item:
         return {"error": "Ingredient not found"}
 
-    item.name = ingredient.name
+    item.name = ingredient.name.strip().lower()
     item.quantity = ingredient.quantity
     item.unit = ingredient.unit
 

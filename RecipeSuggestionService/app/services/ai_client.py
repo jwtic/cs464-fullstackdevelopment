@@ -4,6 +4,9 @@ import httpx
 from pathlib import Path
 from dotenv import load_dotenv
 
+load_dotenv()
+
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
@@ -50,7 +53,26 @@ Return ONLY valid JSON in this format:
 """
 
 async def generate_recipe_suggestions(ingredients: list[str]):
-    if OPENROUTER_API_KEY:
+    ingredient_text = "\n".join(f"- {item}" for item in ingredients)
+
+    prompt = f"""
+User ingredients:
+{ingredient_text}
+
+{PROMPT_TEMPLATE}
+"""
+
+    if GEMINI_API_KEY:
+        import google.generativeai as genai
+        genai.configure(api_key=GEMINI_API_KEY)
+        model = genai.GenerativeModel(
+            model_name=os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite"),
+            system_instruction="You are a helpful cooking assistant.",
+        )
+        response = model.generate_content(prompt)
+        content = response.text
+
+    elif OPENROUTER_API_KEY:
         api_key = OPENROUTER_API_KEY
         api_url = "https://openrouter.ai/api/v1/chat/completions"
         model = os.getenv("OPENROUTER_MODEL", "openai/gpt-4o-mini")
@@ -59,63 +81,41 @@ async def generate_recipe_suggestions(ingredients: list[str]):
         api_url = "https://api.openai.com/v1/chat/completions"
         model = "gpt-4o-mini"
     else:
-        raise ValueError("Neither OPENROUTER_API_KEY nor OPENAI_API_KEY is configured on the server.")
+        raise ValueError("No AI API key is configured on the server. Set GEMINI_API_KEY, OPENROUTER_API_KEY, or OPENAI_API_KEY.")
 
-    ingredient_text = "\n".join(f"- {item}" for item in ingredients)
+    if not GEMINI_API_KEY:
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": os.getenv("OPENROUTER_HTTP_REFERER", "http://localhost:3000"),
+            "X-Title": os.getenv("OPENROUTER_APP_NAME", "Smart Pantry"),
+        }
 
-    prompt = f"""
-User ingredients:
-{ingredient_text}
+        payload = {
+            "model": model,
+            "messages": [
+                {"role": "system", "content": "You are a helpful cooking assistant."},
+                {"role": "user", "content": prompt},
+            ],
+            "temperature": 0.7,
+        }
 
-{PROMPT_TEMPLATE}
-"""
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            response = await client.post(api_url, headers=headers, json=payload)
+            response.raise_for_status()
+            data = response.json()
 
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json",
-        # Optional but recommended by OpenRouter:
-        "HTTP-Referer": "http://localhost",
-        "X-Title": "RecipeSuggestionService",
-    }
+        content = data["choices"][0]["message"]["content"]
 
-    if api_url.startswith("https://openrouter.ai"):
-        headers["HTTP-Referer"] = os.getenv("OPENROUTER_HTTP_REFERER", "http://localhost:3000")
-        headers["X-Title"] = os.getenv("OPENROUTER_APP_NAME", "Smart Pantry")
-
-    payload = {
-        "model": model,
-        "messages": [
-            {"role": "system", "content": "You are a helpful cooking assistant."},
-            {"role": "user", "content": prompt},
-        ],
-        "temperature": 0.7,
-    }
-
-    async with httpx.AsyncClient(timeout=60.0) as client:
-        response = await client.post(api_url, headers=headers, json=payload)
-        response.raise_for_status()
-        data = response.json()
-
-    return data["choices"][0]["message"]["content"]
-
-async def generate_recipe_suggestions(ingredients: list[str]):
-    if not get_api_key():
-        raise ValueError("OPENROUTER_API_KEY is not configured on the server.")
-
-    ingredient_text = "\n".join(f"- {item}" for item in ingredients)
-
-    prompt = f"""
-User ingredients:
-{ingredient_text}
-
-{PROMPT_TEMPLATE}
-"""
-
-    content = await call_openrouter_api(prompt)
+    # Strip markdown code fences if present
+    content = content.strip()
+    if content.startswith("```"):
+        content = content.split("\n", 1)[-1]
+        content = content.rsplit("```", 1)[0].strip()
 
     try:
         return json.loads(content)
     except json.JSONDecodeError as e:
-        print("Raw model output:")
-        print(content)
+        print("Raw model output:", content)
         raise RuntimeError("Model returned invalid JSON.") from e
+

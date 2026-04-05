@@ -112,7 +112,13 @@ export default function InventoryPage() {
         return;
       }
       const item = await response.json();
-      setIngredients((prev) => [...prev, item]);
+      setIngredients((prev) => {
+        const exists = prev.find((i) => i.id === item.id);
+        if (exists) {
+          return prev.map((i) => (i.id === item.id ? item : i));
+        }
+        return [...prev, item];
+      });
       setShowModal(false);
     } catch {
       setAddError("Unable to reach the inventory service.");

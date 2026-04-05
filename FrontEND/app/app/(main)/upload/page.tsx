@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import React from "react";
 
@@ -48,6 +48,7 @@ export default function UploadPage() {
   const [addedSuccess, setAddedSuccess] = useState(false);
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
   const [nextIngredientId, setNextIngredientId] = useState(1);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     return () => {
@@ -149,6 +150,7 @@ export default function UploadPage() {
     } catch (error) {
       setAnalyzeError(analyzeFetchError(error));
       setShowIngredients(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
     } finally {
       setAnalyzing(false);
     }
@@ -257,6 +259,7 @@ export default function UploadPage() {
                           <p className="text-base-content/60 mb-8 max-w-md">Supported formats: JPG, PNG. Max file size: 5MB.</p>
                           <div className="form-control w-full max-w-xs mx-auto">
                             <input 
+                                ref={fileInputRef}
                                 type="file" 
                                 className="file-input file-input-bordered file-input-primary w-full" 
                                 onChange={handleImageChange}
