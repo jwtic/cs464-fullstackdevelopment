@@ -82,5 +82,5 @@ jobs:
           echo "${{ secrets.EC2_SSH_KEY }}" > key.pem
           chmod 600 key.pem
           ssh -i key.pem -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_HOST }} \
-            "cd /home/ec2-user/cs464-fullstackdevelopment && git pull && docker compose up -d --build"
+            "cd /home/ec2-user/cs464-fullstackdevelopment && git fetch origin && git reset --hard origin/main && docker compose up -d --build"
           rm key.pem
