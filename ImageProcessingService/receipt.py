@@ -1,13 +1,15 @@
 import io
+import os
 from typing import List
 
 import re
 from google import genai
 from PIL import Image
+from dotenv import load_dotenv
 
-# --- DIRECT CONFIG ---
-# Hardcoded API Key for Gemini
-GEMINI_API_KEY = "AIzaSyBVbVNNqI3wAI2bwfPAF4w-aOEGDG4DhPI"
+load_dotenv()
+
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 RECEIPT_PROMPT = """    
 Extract food and drink items from the receipt.
@@ -80,7 +82,8 @@ class ReceiptGeminiAnalyzer:
     This class is imported and used by main.py.
     """
     def __init__(self) -> None:
-        # Initialize the Google GenAI client with your hardcoded key
+        if not GEMINI_API_KEY:
+            raise ValueError("GEMINI_API_KEY is not set in environment.")
         self.client = genai.Client(api_key=GEMINI_API_KEY)
 
     def analyze(self, image_bytes: bytes) -> List[str]:

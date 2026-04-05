@@ -1,13 +1,15 @@
 import io
+import os
 import time
 from typing import List
 import requests
 from PIL import Image
+from dotenv import load_dotenv
 
+load_dotenv()
 
-# --- Direct config (paste your keys; avoid committing real keys to git) ---
-AZURE_SUBSCRIPTION_KEY = "6uxN6viPV6cmfpsuSsHzJSxFEpMmTjNOSelvoYD9xzD67ui53a02JQQJ99CCACqBBLyXJ3w3AAAFACOGcCBK"
-AZURE_ENDPOINT = "https://cs464.cognitiveservices.azure.com/"
+AZURE_SUBSCRIPTION_KEY = os.getenv("AZURE_SUBSCRIPTION_KEY")
+AZURE_ENDPOINT = os.getenv("AZURE_ENDPOINT", "")
 
 class FridgeScannerAI:
     def __init__(self):
