@@ -23,7 +23,6 @@ def _parse_comma_list(text: str) -> List[str]:
     """Cleans up the LLM response to ensure only ingredient strings remain."""
     text = text.strip()
 
-    # Remove common AI prefixes (e.g., "Here is the list: ")
     if ":" in text:
         text = text.split(":", 1)[-1].strip()
 
@@ -38,10 +37,10 @@ def _parse_comma_list(text: str) -> List[str]:
         item = p.strip()
         if not item:
             continue
-        # Skip sentences (ingredients are usually short)
+
         if len(item.split()) > 5:
             continue
-        # Skip chatty leftovers
+
         if any(word in item.lower() for word in ban_words):
             continue
         clean_items.append(item.title())
@@ -54,7 +53,6 @@ class ReceiptGeminiAnalyzer:
     Initialized lazily by main.py.
     """
     def __init__(self) -> None:
-        # Pull the key from environment variables (loaded via env_loader in main.py)
         key = os.getenv("GEMINI_API_KEY", "").strip()
         
         if not key:

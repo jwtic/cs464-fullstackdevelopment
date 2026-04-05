@@ -7,12 +7,10 @@ from PIL import Image
 
 class FridgeScannerAI:
     def __init__(self):
-        # --- Using Environment Variables ---
-        # This looks for the keys loaded by your env_loader.py
+
         self.subscription_key = os.getenv("AZURE_SUBSCRIPTION_KEY", "").strip()
         endpoint = os.getenv("AZURE_ENDPOINT", "").strip()
         
-        # Validation: Crash early with a clear message if keys are missing
         if not self.subscription_key or not endpoint:
             raise RuntimeError(
                 "Missing Azure Credentials! Ensure AZURE_SUBSCRIPTION_KEY "
